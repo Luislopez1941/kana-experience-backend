@@ -1,0 +1,197 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Role {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  permissions Json?    // Array de permisos como JSON
+  users       User[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model User {
+  id             Int      @id @default(autoincrement())
+  email          String   @unique
+  password       String
+  firstName      String
+  middleName     String?
+  lastName       String
+  secondLastName String?
+  phoneNumber    String?
+  profileImage   String?  // You can store a URL or path here
+  roleId         Int
+  role           Role     @relation(fields: [roleId], references: [id])
+
+  parentId       Int?
+  parent         User?    @relation("UserToSubUsers", fields: [parentId], references: [id])
+  subUsers       User[]   @relation("UserToSubUsers")
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model YachtType {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  yachts    Yacht[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Yacht {
+  id              Int        @id @default(autoincrement())
+  name            String
+  capacity        Int        // Number of people
+  length          String     // Length in meters
+  location        String     // Port location
+  description     String     @db.Text
+  features        String?    @db.Text // Features and equipment
+  pricePerDay     Float      // Price per day in euros
+  yachtTypeId     Int
+  yachtType       YachtType  @relation(fields: [yachtTypeId], references: [id])
+  images          YachtImage[]
+  characteristics YachtCharacteristic[]
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+}
+
+model YachtImage {
+  id        Int      @id @default(autoincrement())
+  url       String   // URL of the image
+  yachtId   Int
+  yacht     Yacht    @relation(fields: [yachtId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model YachtCharacteristic {
+  id        Int      @id @default(autoincrement())
+  name      String   // Characteristic name in English
+  yachtId   Int
+  yacht     Yacht    @relation(fields: [yachtId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TourType {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  tours     Tour[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Tour {
+  id            Int        @id @default(autoincrement())
+  name          String     // Tour name (e.g., "Tour Isla Mujeres")
+  description   String     @db.Text // Tour description
+  capacity      Int        // Number of people (e.g., 15)
+  price         Float      // Price per hour (e.g., 2500.00)
+  location      String     // Location (e.g., "Cancún")
+  status        String     @default("Activo") // Status: "Activo" or "Inactivo"
+  tourTypeId    Int
+  tourType      TourType   @relation(fields: [tourTypeId], references: [id])
+  images        TourImage[]
+  characteristics TourCharacteristic[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+model TourCharacteristic {
+  id        Int      @id @default(autoincrement())
+  name      String   // Characteristic name in English
+  tourId    Int
+  tour      Tour     @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TourImage {
+  id        Int      @id @default(autoincrement())
+  url       String   // URL of the image
+  tourId    Int
+  tour      Tour     @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model State {
+  id            Int           @id @default(autoincrement())
+  name          String        @unique
+  municipalities Municipality[]
+  clubs         Club[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model Municipality {
+  id          Int        @id @default(autoincrement())
+  name        String
+  stateId     Int
+  state       State      @relation(fields: [stateId], references: [id], onDelete: Cascade)
+  localities  Locality[]
+  clubs       Club[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Locality {
+  id             Int          @id @default(autoincrement())
+  name           String
+  municipalityId Int
+  municipality   Municipality @relation(fields: [municipalityId], references: [id], onDelete: Cascade)
+  clubs          Club[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+
+
+
+
+
+model Club {
+  id             Int        @id @default(autoincrement())
+  name           String
+  description    String?
+  address        String?
+  phone          String?
+  website        String?
+  typeId         Int
+  type           ClubType   @relation(fields: [typeId], references: [id], onDelete: Cascade)
+  
+  stateId        Int
+  state          State      @relation(fields: [stateId], references: [id], onDelete: Cascade)
+
+  municipalityId Int
+  municipality   Municipality @relation(fields: [municipalityId], references: [id], onDelete: Cascade)
+
+  localityId     Int
+  locality       Locality   @relation(fields: [localityId], references: [id], onDelete: Cascade)
+
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+}
+
+model ClubType {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  clubs     Club[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
