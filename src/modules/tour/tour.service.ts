@@ -65,14 +65,24 @@ export class TourService {
 
   async create(createTourDto: CreateTourDto): Promise<ApiResponse<Tour>> {
     // Prepare tour data
-    const { images, characteristics, ...tourData } = createTourDto;
+    const { images, characteristics, pricing, ...tourData } = createTourDto;
+
+    // Convert pricing array to JSON if provided
+    const tourDataWithPricing = {
+      ...tourData,
+      pricing: pricing ? pricing as any : null,
+    };
 
     const tour = await this.prisma.tour.create({
-      data: tourData,
+      data: tourDataWithPricing,
       include: {
-        images: true,
-        characteristics: true,
-        tourType: true,
+        images: {
+          orderBy: { createdAt: 'asc' }
+        },
+        characteristics: {
+          orderBy: { createdAt: 'asc' }
+        },
+        tourCategory: true,
       },
     });
 
@@ -111,9 +121,13 @@ export class TourService {
     const tourWithData = await this.prisma.tour.findUnique({
       where: { id: tour.id },
       include: {
-        images: true,
-        characteristics: true,
-        tourType: true,
+        images: {
+          orderBy: { createdAt: 'asc' }
+        },
+        characteristics: {
+          orderBy: { createdAt: 'asc' }
+        },
+        tourCategory: true,
       },
     });
 
@@ -131,9 +145,13 @@ export class TourService {
   async findAll(): Promise<ApiResponse<Tour[]>> {
     const tours = await this.prisma.tour.findMany({
       include: {
-        images: true,
-        characteristics: true,
-        tourType: true,
+        images: {
+          orderBy: { createdAt: 'asc' }
+        },
+        characteristics: {
+          orderBy: { createdAt: 'asc' }
+        },
+        tourCategory: true,
       },
       orderBy: { name: 'asc' },
     });
@@ -149,9 +167,13 @@ export class TourService {
     const tour = await this.prisma.tour.findUnique({
       where: { id },
       include: {
-        images: true,
-        characteristics: true,
-        tourType: true,
+        images: {
+          orderBy: { createdAt: 'asc' }
+        },
+        characteristics: {
+          orderBy: { createdAt: 'asc' }
+        },
+        tourCategory: true,
       },
     });
 
@@ -164,13 +186,21 @@ export class TourService {
 
   async update(id: number, updateTourDto: UpdateTourDto): Promise<ApiResponse<Tour>> {
     // Prepare update data
-    const { images, characteristics, delete_images, ...updateData } = updateTourDto;
+    const { images, characteristics, delete_images, pricing, ...updateData } = updateTourDto;
+
+    // Convert pricing array to JSON if provided
+    const updateDataWithPricing = {
+      ...updateData,
+      pricing: pricing ? pricing as any : undefined,
+    };
 
     // Check if tour exists
     const existingTour = await this.prisma.tour.findUnique({
       where: { id },
       include: {
-        images: true,
+        images: {
+          orderBy: { createdAt: 'asc' }
+        },
       },
     });
 
@@ -279,11 +309,15 @@ export class TourService {
 
     const updatedTour = await this.prisma.tour.update({
       where: { id },
-      data: updateData,
+      data: updateDataWithPricing,
       include: {
-        images: true,
-        characteristics: true,
-        tourType: true,
+        images: {
+          orderBy: { createdAt: 'asc' }
+        },
+        characteristics: {
+          orderBy: { createdAt: 'asc' }
+        },
+        tourCategory: true,
       },
     });
 
@@ -299,8 +333,12 @@ export class TourService {
     const existingTour = await this.prisma.tour.findUnique({
       where: { id },
       include: {
-        images: true,
-        characteristics: true,
+        images: {
+          orderBy: { createdAt: 'asc' }
+        },
+        characteristics: {
+          orderBy: { createdAt: 'asc' }
+        },
       },
     });
 
@@ -322,13 +360,17 @@ export class TourService {
     });
   }
 
-  async getToursByType(tourTypeId: number): Promise<ApiResponse<Tour[]>> {
+  async getToursByCategory(tourCategoryId: number): Promise<ApiResponse<Tour[]>> {
     const tours = await this.prisma.tour.findMany({
-      where: { tourTypeId: tourTypeId },
+      where: { tourCategoryId: tourCategoryId },
       include: {
-        images: true,
-        characteristics: true,
-        tourType: true,
+        images: {
+          orderBy: { createdAt: 'asc' }
+        },
+        characteristics: {
+          orderBy: { createdAt: 'asc' }
+        },
+        tourCategory: true,
       },
       orderBy: { name: 'asc' },
     });
@@ -336,7 +378,7 @@ export class TourService {
     return {
       data: tours,
       status: 'success',
-      message: `Tours del tipo obtenidos correctamente`
+      message: `Tours de la categoría obtenidos correctamente`
     };
   }
 } 

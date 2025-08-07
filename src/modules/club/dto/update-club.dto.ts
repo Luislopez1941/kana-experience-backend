@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsNumber, IsUrl, MinLength } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsNumber, IsUrl, MinLength, IsArray } from 'class-validator';
 
 export class UpdateClubDto {
   @IsOptional()
@@ -22,6 +22,16 @@ export class UpdateClubDto {
   @IsOptional()
   @IsUrl()
   website?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  images?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  characteristics?: string[];
 
   @IsOptional()
   @IsNumber()

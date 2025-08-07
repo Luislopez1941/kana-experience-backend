@@ -12,10 +12,13 @@ export class StateController {
     return this.stateService.findAll();
   }
 
+  @Get('by-name/:name')
+  findByName(@Param('name') name: string): Promise<ApiResponse<State>> {
+    return this.stateService.findByName(name);
+  }
+
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number): Promise<State> {
     return this.stateService.findOne(id);
   }
-
-
 } 

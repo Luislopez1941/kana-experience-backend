@@ -4,7 +4,7 @@ import { YachtService } from '../yacht/yacht.service';
 import { CreateYachtTypeDto } from './dto/create-yacht-type.dto';
 import { UpdateYachtTypeDto } from './dto/update-yacht-type.dto';
 import { ApiResponse } from './types/api-response.type';
-import { YachtType } from './entities/yacht-type.entity';
+import { YachtCategory } from './entities/yacht-type.entity';
 import { Yacht } from '../yacht/entities/yacht.entity';
 
 @Controller('yacht-types')
@@ -16,18 +16,18 @@ export class YachtTypeController {
 
   @Post('create')
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() createYachtTypeDto: CreateYachtTypeDto): Promise<ApiResponse<YachtType>> {
+  create(@Body() createYachtTypeDto: CreateYachtTypeDto): Promise<ApiResponse<YachtCategory>> {
     return this.yachtTypeService.create(createYachtTypeDto);
   }
 
   @Get('get-all')
-  findAll(): Promise<ApiResponse<YachtType[]>> {
+  findAll(): Promise<ApiResponse<YachtCategory[]>> {
     return this.yachtTypeService.findAll();
   }
 
-  @Get(':id/yachts')
-  getYachtsByType(@Param('id') id: string): Promise<ApiResponse<Yacht[]>> {
-    return this.yachtService.getYachtsByYachtType(+id);
+  @Get('get-yacht-by-id/:id')
+  getYachtsByCategory(@Param('id') id: string): Promise<ApiResponse<Yacht[]>> {
+    return this.yachtService.getYachtsByYachtCategory(+id, 1);
   }
 
   @Get(':id')
@@ -36,7 +36,7 @@ export class YachtTypeController {
   }
 
   @Patch('update/:id')
-  update(@Param('id') id: string, @Body() updateYachtTypeDto: UpdateYachtTypeDto): Promise<ApiResponse<YachtType>> {
+  update(@Param('id') id: string, @Body() updateYachtTypeDto: UpdateYachtTypeDto): Promise<ApiResponse<YachtCategory>> {
     return this.yachtTypeService.update(+id, updateYachtTypeDto);
   }
 

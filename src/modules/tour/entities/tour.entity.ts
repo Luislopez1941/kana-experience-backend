@@ -14,7 +14,7 @@ export class TourCharacteristic {
   updatedAt: Date;
 }
 
-export class TourType {
+export class TourCategory {
   id: number;
   name: string;
   createdAt: Date;
@@ -25,12 +25,15 @@ export class Tour {
   id: number;
   name: string;
   description: string;
-  capacity: number;
-  price: number;
+  pricing?: any | null;
   location: string;
   status: string;
-  tourTypeId: number;
-  tourType?: TourType;
+  horarios?: string | null;
+  duracion?: string | null;
+  edadMinima?: string | null;
+  transportacion?: string | null;
+  tourCategoryId: number;
+  tourCategory?: TourCategory;
   images?: TourImage[];
   characteristics?: TourCharacteristic[];
   createdAt: Date;

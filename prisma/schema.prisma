@@ -45,7 +45,7 @@ model User {
   updatedAt      DateTime @updatedAt
 }
 
-model YachtType {
+model YachtCategory {
   id        Int      @id @default(autoincrement())
   name      String   @unique
   yachts    Yacht[]
@@ -61,9 +61,10 @@ model Yacht {
   location        String     // Port location
   description     String     @db.Text
   features        String?    @db.Text // Features and equipment
-  pricePerDay     Float      // Price per day in euros
-  yachtTypeId     Int
-  yachtType       YachtType  @relation(fields: [yachtTypeId], references: [id])
+  pricing         Json?      // Array of objects with hora and precios properties
+  status          String     @default("Activo") // Status: "Activo" or "Inactivo"
+  yachtCategoryId Int
+  yachtCategory   YachtCategory  @relation(fields: [yachtCategoryId], references: [id])
   images          YachtImage[]
   characteristics YachtCharacteristic[]
   createdAt       DateTime   @default(now())
@@ -88,7 +89,7 @@ model YachtCharacteristic {
   updatedAt DateTime @updatedAt
 }
 
-model TourType {
+model TourCategory {
   id        Int      @id @default(autoincrement())
   name      String   @unique
   tours     Tour[]
@@ -100,12 +101,18 @@ model Tour {
   id            Int        @id @default(autoincrement())
   name          String     // Tour name (e.g., "Tour Isla Mujeres")
   description   String     @db.Text // Tour description
-  capacity      Int        // Number of people (e.g., 15)
-  price         Float      // Price per hour (e.g., 2500.00)
+  pricing       Json?      // Array of objects with personas and precio properties
   location      String     // Location (e.g., "Cancún")
   status        String     @default("Activo") // Status: "Activo" or "Inactivo"
-  tourTypeId    Int
-  tourType      TourType   @relation(fields: [tourTypeId], references: [id])
+  
+  // Nuevos campos para tours
+  horarios      String?    // Horarios: "De lunes a sábado. A las 09:00, 11:00, 13:00 y 15:00 horas."
+  duracion      String?    // Duración: "105 minutos"
+  edadMinima    String?    // Edad mínima: "A partir de los 12 años"
+  transportacion String?   // Opciones de transportación: "Rutas desde el hotel Dreams Natura Resort & Spa hasta el Riu Dunamar y centro de Cancún."
+  
+  tourCategoryId Int
+  tourCategory   TourCategory   @relation(fields: [tourCategoryId], references: [id])
   images        TourImage[]
   characteristics TourCharacteristic[]
   createdAt     DateTime   @default(now())
@@ -170,8 +177,6 @@ model Club {
   name           String
   description    String?
   address        String?
-  phone          String?
-  website        String?
   typeId         Int
   type           ClubType   @relation(fields: [typeId], references: [id], onDelete: Cascade)
   
@@ -184,8 +189,28 @@ model Club {
   localityId     Int
   locality       Locality   @relation(fields: [localityId], references: [id], onDelete: Cascade)
 
+  images         ClubImage[]
+  characteristics ClubCharacteristic[]
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
+}
+
+model ClubImage {
+  id        Int      @id @default(autoincrement())
+  url       String   // URL of the image
+  clubId    Int
+  club      Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ClubCharacteristic {
+  id        Int      @id @default(autoincrement())
+  name      String   // Characteristic name in English
+  clubId    Int
+  club      Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model ClubType {

@@ -62,4 +62,28 @@ export class MunicipalityService {
       message: `Municipios de ${state.name} obtenidos correctamente`
     };
   }
+
+  async findByName(name: string): Promise<ApiResponse<Municipality>> {
+    const municipality = await this.prisma.municipality.findFirst({
+      where: { 
+        name: {
+          contains: name,
+        },
+      },
+      include: {
+        state: true,
+        localities: true,
+      },
+    });
+
+    if (!municipality) {
+      throw new NotFoundException(`Municipality with name "${name}" not found`);
+    }
+
+    return {
+      data: municipality,
+      status: 'success',
+      message: `Municipio "${municipality.name}" obtenido correctamente`
+    };
+  }
 } 

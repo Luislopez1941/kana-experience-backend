@@ -2,102 +2,102 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateYachtTypeDto } from './dto/create-yacht-type.dto';
 import { UpdateYachtTypeDto } from './dto/update-yacht-type.dto';
-import { YachtType } from './entities/yacht-type.entity';
+import { YachtCategory } from './entities/yacht-type.entity';
 import { ApiResponse } from './types/api-response.type';
 
 @Injectable()
 export class YachtTypeService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createYachtTypeDto: CreateYachtTypeDto): Promise<ApiResponse<YachtType>> {
-    // Check if yacht type with name already exists
-    const existingYachtType = await this.prisma.yachtType.findUnique({
+  async create(createYachtTypeDto: CreateYachtTypeDto): Promise<ApiResponse<YachtCategory>> {
+    // Check if yacht category with name already exists
+    const existingYachtCategory = await this.prisma.yachtCategory.findUnique({
       where: { name: createYachtTypeDto.name },
     });
 
-    if (existingYachtType) {
-      throw new ConflictException('Yacht type with this name already exists');
+    if (existingYachtCategory) {
+      throw new ConflictException('Yacht category with this name already exists');
     }
 
-    const yachtType = await this.prisma.yachtType.create({
+    const yachtCategory = await this.prisma.yachtCategory.create({
       data: createYachtTypeDto,
     });
 
-    return {data: yachtType, status: 'success',  message: 'Tipo de embarcación creado correctamente'};
+    return {data: yachtCategory, status: 'success',  message: 'Categoría de embarcación creada correctamente'};
   }
 
-  async findAll(): Promise<ApiResponse<YachtType[]>> {
-    const yachtTypes = await this.prisma.yachtType.findMany({
+  async findAll(): Promise<ApiResponse<YachtCategory[]>> {
+    const yachtCategories = await this.prisma.yachtCategory.findMany({
       orderBy: { name: 'asc' },
     });
 
-    return {data: yachtTypes, status: 'success', message: 'Tipos de embarcación obtenidos correctamente'};
+    return {data: yachtCategories, status: 'success', message: 'Categorías de embarcación obtenidas correctamente'};
   }
 
-  async findOne(id: number): Promise<YachtType> {
-    const yachtType = await this.prisma.yachtType.findUnique({
+  async findOne(id: number): Promise<YachtCategory> {
+    const yachtCategory = await this.prisma.yachtCategory.findUnique({
       where: { id },
     });
 
-    if (!yachtType) {
-      throw new NotFoundException(`Yacht type with ID ${id} not found`);
+    if (!yachtCategory) {
+      throw new NotFoundException(`Yacht category with ID ${id} not found`);
     }
 
-    return yachtType;
+    return yachtCategory;
   }
 
-  async update(id: number, updateYachtTypeDto: UpdateYachtTypeDto): Promise<ApiResponse<YachtType>> {
-    // Check if yacht type exists
-    const existingYachtType = await this.prisma.yachtType.findUnique({
+  async update(id: number, updateYachtTypeDto: UpdateYachtTypeDto): Promise<ApiResponse<YachtCategory>> {
+    // Check if yacht category exists
+    const existingYachtCategory = await this.prisma.yachtCategory.findUnique({
       where: { id },
     });
 
-    if (!existingYachtType) {
-      throw new NotFoundException(`Yacht type with ID ${id} not found`);
+    if (!existingYachtCategory) {
+      throw new NotFoundException(`Yacht category with ID ${id} not found`);
     }
 
     // If name is being updated, check if it's already taken
-    if (updateYachtTypeDto.name && updateYachtTypeDto.name !== existingYachtType.name) {
-      const yachtTypeWithName = await this.prisma.yachtType.findUnique({
+    if (updateYachtTypeDto.name && updateYachtTypeDto.name !== existingYachtCategory.name) {
+      const yachtCategoryWithName = await this.prisma.yachtCategory.findUnique({
         where: { name: updateYachtTypeDto.name },
       });
 
-      if (yachtTypeWithName) {
-        throw new ConflictException('Yacht type with this name already exists');
+      if (yachtCategoryWithName) {
+        throw new ConflictException('Yacht category with this name already exists');
       }
     }
 
-    const updatedYachtType = await this.prisma.yachtType.update({
+    const updatedYachtCategory = await this.prisma.yachtCategory.update({
       where: { id },
       data: updateYachtTypeDto,
     });
 
-    return {data: updatedYachtType, status: 'success', message: 'Tipo de embarcación actualizado correctamente'};
+    return {data: updatedYachtCategory, status: 'success', message: 'Categoría de embarcación actualizada correctamente'};
   }
 
   async remove(id: number): Promise<ApiResponse<{ deleted: boolean }>> {
-    // Check if yacht type exists
-    const existingYachtType = await this.prisma.yachtType.findUnique({
+    // Check if yacht category exists
+    const existingYachtCategory = await this.prisma.yachtCategory.findUnique({
       where: { id },
     });
 
-    if (!existingYachtType) {
-      throw new NotFoundException(`Yacht type with ID ${id} not found`);
+    if (!existingYachtCategory) {
+      throw new NotFoundException(`Yacht category with ID ${id} not found`);
     }
 
-    // Check if there are yachts using this type
-    const yachtsWithType = await this.prisma.yacht.findMany({
-      where: { yachtTypeId: id },
+    // Check if there are yachts using this category
+    const yachtsWithCategory = await this.prisma.yacht.findMany({
+      where: { yachtCategoryId: id },
     });
 
-    if (yachtsWithType.length > 0) {
-      throw new ConflictException('Cannot delete yacht type that is being used by yachts');
+    if (yachtsWithCategory.length > 0) {
+      throw new ConflictException('Cannot delete yacht category that is being used by yachts');
     }
 
-    await this.prisma.yachtType.delete({
+    await this.prisma.yachtCategory.delete({
       where: { id },
     });
 
-    return {data: { deleted: true }, status: 'success', message: 'Tipo de embarcación eliminado correctamente'};
+    return {data: { deleted: true }, status: 'success', message: 'Categoría de embarcación eliminada correctamente'};
   }
 } 

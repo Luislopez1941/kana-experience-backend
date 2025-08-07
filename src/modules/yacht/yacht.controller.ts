@@ -20,12 +20,15 @@ export class YachtController {
     return this.yachtService.findAll();
   }
 
-  @Get('by-type/:yachtTypeId')
-  getYachtsByYachtType(@Param('yachtTypeId') yachtTypeId: string): Promise<ApiResponse<Yacht[]>> {
-    return this.yachtService.getYachtsByYachtType(+yachtTypeId);
+  @Post('by-category')
+  getYachtsByYachtCategory(
+    @Body('yachtCategoryId') yachtCategoryId: number,
+    @Body('page') page: number,
+  ): Promise<ApiResponse<Yacht[]>> {
+    return this.yachtService.getYachtsByYachtCategory(yachtCategoryId, page);
   }
 
-  @Get(':id')
+  @Get('get-yacht-by-id/:id')
   findOne(@Param('id') id: string) {
     return this.yachtService.findOne(+id);
   }

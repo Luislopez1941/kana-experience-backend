@@ -75,24 +75,34 @@ export class YachtService {
   }
 
   async create(createYachtDto: CreateYachtDto): Promise<ApiResponse<Yacht>> {
-    // Check if yacht type exists
-    const yachtType = await this.prisma.yachtType.findUnique({
-      where: { id: createYachtDto.yachtTypeId },
+    // Check if yacht category exists
+    const yachtCategory = await this.prisma.yachtCategory.findUnique({
+      where: { id: createYachtDto.yachtCategoryId },
     });
 
-    if (!yachtType) {
-      throw new NotFoundException(`Yacht type with ID ${createYachtDto.yachtTypeId} not found`);
+    if (!yachtCategory) {
+      throw new NotFoundException(`Yacht category with ID ${createYachtDto.yachtCategoryId} not found`);
     }
 
     // Create yacht data without images and characteristics
-    const { images, characteristics, ...yachtData } = createYachtDto;
+    const { images, characteristics, pricing, ...yachtData } = createYachtDto;
+
+    // Convert pricing array to JSON if provided
+    const yachtDataWithPricing = {
+      ...yachtData,
+      pricing: pricing ? pricing as any : null,
+    };
 
     const yacht = await this.prisma.yacht.create({
-      data: yachtData,
+      data: yachtDataWithPricing,
       include: {
-        yachtType: true,
-        images: true,
-        characteristics: true,
+        yachtCategory: true,
+        images: {
+          orderBy: { createdAt: 'asc' }
+        },
+        characteristics: {
+          orderBy: { createdAt: 'asc' }
+        },
       },
     });
 
@@ -132,9 +142,13 @@ export class YachtService {
     const yachtWithImages = await this.prisma.yacht.findUnique({
       where: { id: yacht.id },
       include: {
-        yachtType: true,
-        images: true,
-        characteristics: true,
+        yachtCategory: true,
+        images: {
+          orderBy: { createdAt: 'asc' }
+        },
+        characteristics: {
+          orderBy: { createdAt: 'asc' }
+        },
       },
     });
 
@@ -144,9 +158,13 @@ export class YachtService {
   async findAll(): Promise<ApiResponse<Yacht[]>> {
     const yachts = await this.prisma.yacht.findMany({
       include: {
-        yachtType: true,
-        images: true,
-        characteristics: true,
+        yachtCategory: true,
+        images: {
+          orderBy: { createdAt: 'asc' }
+        },
+        characteristics: {
+          orderBy: { createdAt: 'asc' }
+        },
       },
       orderBy: { name: 'asc' },
     });
@@ -158,9 +176,13 @@ export class YachtService {
     const yacht = await this.prisma.yacht.findUnique({
       where: { id },
       include: {
-        yachtType: true,
-        images: true,
-        characteristics: true,
+        yachtCategory: true,
+        images: {
+          orderBy: { createdAt: 'asc' }
+        },
+        characteristics: {
+          orderBy: { createdAt: 'asc' }
+        },
       },
     });
 
@@ -173,13 +195,21 @@ export class YachtService {
 
   async update(id: number, updateYachtDto: UpdateYachtDto): Promise<ApiResponse<Yacht>> {
     // Prepare update data
-    const { images, characteristics, delete_images, ...updateData } = updateYachtDto;
+    const { images, characteristics, delete_images, pricing, ...updateData } = updateYachtDto;
+
+    // Convert pricing array to JSON if provided
+    const updateDataWithPricing = {
+      ...updateData,
+      pricing: pricing ? pricing as any : undefined,
+    };
 
     // Check if yacht exists
     const existingYacht = await this.prisma.yacht.findUnique({
       where: { id },
       include: {
-        images: true,
+        images: {
+          orderBy: { createdAt: 'asc' }
+        },
       },
     });
 
@@ -187,14 +217,14 @@ export class YachtService {
       throw new NotFoundException(`Yacht with ID ${id} not found`);
     }
 
-    // If yacht type is being updated, check if it exists
-    if (updateYachtDto.yachtTypeId) {
-      const yachtType = await this.prisma.yachtType.findUnique({
-        where: { id: updateYachtDto.yachtTypeId },
+    // If yacht category is being updated, check if it exists
+    if (updateYachtDto.yachtCategoryId) {
+      const yachtCategory = await this.prisma.yachtCategory.findUnique({
+        where: { id: updateYachtDto.yachtCategoryId },
       });
 
-      if (!yachtType) {
-        throw new NotFoundException(`Yacht type with ID ${updateYachtDto.yachtTypeId} not found`);
+      if (!yachtCategory) {
+        throw new NotFoundException(`Yacht category with ID ${updateYachtDto.yachtCategoryId} not found`);
       }
     }
 
@@ -301,11 +331,15 @@ export class YachtService {
 
     const updatedYacht = await this.prisma.yacht.update({
       where: { id },
-      data: updateData,
+      data: updateDataWithPricing,
       include: {
-        yachtType: true,
-        images: true,
-        characteristics: true,
+        yachtCategory: true,
+        images: {
+          orderBy: { createdAt: 'asc' }
+        },
+        characteristics: {
+          orderBy: { createdAt: 'asc' }
+        },
       },
     });
 
@@ -317,8 +351,12 @@ export class YachtService {
     const existingYacht = await this.prisma.yacht.findUnique({
       where: { id },
       include: {
-        images: true,
-        characteristics: true,
+        images: {
+          orderBy: { createdAt: 'asc' }
+        },
+        characteristics: {
+          orderBy: { createdAt: 'asc' }
+        },
       },
     });
 
@@ -340,30 +378,91 @@ export class YachtService {
     });
   }
 
-  async getYachtsByYachtType(yachtTypeId: number): Promise<ApiResponse<Yacht[]>> {
-    // Check if yacht type exists
-    const yachtType = await this.prisma.yachtType.findUnique({
-      where: { id: yachtTypeId },
-    });
+  async getYachtsByYachtCategory(yachtCategoryId: number, page: number = 1): Promise<ApiResponse<Yacht[]>> {
+    const limit = 8; // Límite estático de 8 elementos por página
+    const skip = (page - 1) * limit;
+    
+    // If yachtCategoryId is 0, return all yachts with pagination
+    if (yachtCategoryId === 0) {
+      const [yachts, total] = await Promise.all([
+        this.prisma.yacht.findMany({
+          include: {
+            yachtCategory: true,
+            images: {
+              orderBy: { createdAt: 'asc' }
+            },
+            characteristics: {
+              orderBy: { createdAt: 'asc' }
+            },
+          },
+          orderBy: { name: 'asc' },
+          skip,
+          take: limit,
+        }),
+        this.prisma.yacht.count(),
+      ]);
 
-    if (!yachtType) {
-      throw new NotFoundException(`Yacht type with ID ${yachtTypeId} not found`);
+      const totalPages = Math.ceil(total / limit);
+
+      return {
+        data: yachts, 
+        status: 'success', 
+        message: 'Todas las embarcaciones obtenidas correctamente',
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages,
+          hasNext: page < totalPages,
+          hasPrev: page > 1,
+        }
+      };
     }
 
-    const yachts = await this.prisma.yacht.findMany({
-      where: { yachtTypeId },
-      include: {
-        yachtType: true,
-        images: true,
-        characteristics: true,
-      },
-      orderBy: { name: 'asc' },
+    // Check if yacht category exists
+    const yachtCategory = await this.prisma.yachtCategory.findUnique({
+      where: { id: yachtCategoryId },
     });
+
+    if (!yachtCategory) {
+      throw new NotFoundException(`Yacht category with ID ${yachtCategoryId} not found`);
+    }
+
+    const [yachts, total] = await Promise.all([
+      this.prisma.yacht.findMany({
+        where: { yachtCategoryId },
+        include: {
+          yachtCategory: true,
+          images: {
+            orderBy: { createdAt: 'asc' }
+          },
+          characteristics: {
+            orderBy: { createdAt: 'asc' }
+          },
+        },
+        orderBy: { name: 'asc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.yacht.count({
+        where: { yachtCategoryId },
+      }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
 
     return {
       data: yachts, 
       status: 'success', 
-      message: `Embarcaciones del tipo ${yachtType.name} obtenidas correctamente`
+      message: `Embarcaciones de la categoría ${yachtCategory.name} obtenidas correctamente`,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1,
+      }
     };
   }
 }

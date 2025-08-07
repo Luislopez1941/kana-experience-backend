@@ -1,4 +1,17 @@
-import { IsString, IsNotEmpty, IsNumber, IsOptional, Min, MinLength } from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber, IsOptional, Min, MinLength, IsArray, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+
+class PricingItemDto {
+  @IsNumber()
+  @Min(1)
+  @Type(() => Number)
+  personas: number;
+
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  precio: number;
+}
 
 export class CreateTourDto {
   @IsString()
@@ -13,15 +26,14 @@ export class CreateTourDto {
 
   @IsNumber()
   @Min(1)
-  tourTypeId: number;
+  @Type(() => Number)
+  tourCategoryId: number;
 
-  @IsNumber()
-  @Min(1)
-  capacity: number;
-
-  @IsNumber()
-  @Min(0)
-  price: number;
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PricingItemDto)
+  pricing?: PricingItemDto[];
 
   @IsString()
   @IsNotEmpty()
@@ -30,6 +42,22 @@ export class CreateTourDto {
   @IsOptional()
   @IsString()
   status?: string;
+
+  @IsOptional()
+  @IsString()
+  horarios?: string;
+
+  @IsOptional()
+  @IsString()
+  duracion?: string;
+
+  @IsOptional()
+  @IsString()
+  edadMinima?: string;
+
+  @IsOptional()
+  @IsString()
+  transportacion?: string;
 
   @IsOptional()
   @IsString({ each: true })

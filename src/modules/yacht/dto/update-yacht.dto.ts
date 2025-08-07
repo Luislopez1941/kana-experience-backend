@@ -1,4 +1,17 @@
-import { IsString, IsNotEmpty, IsNumber, IsOptional, Min, MinLength } from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber, IsOptional, Min, MinLength, IsArray, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+
+class PricingItemDto {
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  hora: number;
+
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  precio: number;
+}
 
 export class UpdateYachtDto {
   @IsOptional()
@@ -9,6 +22,7 @@ export class UpdateYachtDto {
   @IsOptional()
   @IsNumber()
   @Min(1)
+  @Type(() => Number)
   capacity?: number;
 
   @IsOptional()
@@ -43,11 +57,17 @@ export class UpdateYachtDto {
   features?: string;
 
   @IsOptional()
-  @IsNumber()
-  @Min(0)
-  pricePerDay?: number;
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PricingItemDto)
+  pricing?: PricingItemDto[];
+
+  @IsOptional()
+  @IsString()
+  status?: string;
 
   @IsOptional()
   @IsNumber()
-  yachtTypeId?: number;
+  @Type(() => Number)
+  yachtCategoryId?: number;
 }

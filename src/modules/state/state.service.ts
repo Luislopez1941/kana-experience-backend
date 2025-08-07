@@ -34,5 +34,30 @@ export class StateService {
     return state;
   }
 
+  async findByName(name: string): Promise<ApiResponse<State>> {
+    const state = await this.prisma.state.findFirst({
+      where: { 
+        name: {
+          contains: name,
+        },
+      },
+      include: {
+        municipalities: {
+          include: {
+            localities: true,
+          },
+        },
+      },
+    });
 
+    if (!state) {
+      throw new NotFoundException(`State with name "${name}" not found`);
+    }
+
+    return {
+      data: state,
+      status: 'success',
+      message: `Estado "${state.name}" obtenido correctamente`
+    };
+  }
 } 

@@ -1,3 +1,19 @@
+export class ClubImage {
+  id: number;
+  url: string;
+  clubId: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export class ClubCharacteristic {
+  id: number;
+  name: string;
+  clubId: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export class Club {
   id: number;
   name: string;
@@ -13,6 +29,8 @@ export class Club {
   municipality?: Municipality;
   localityId: number;
   locality?: Locality;
+  images?: ClubImage[];
+  characteristics?: ClubCharacteristic[];
   createdAt: Date;
   updatedAt: Date;
 }

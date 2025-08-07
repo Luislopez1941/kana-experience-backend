@@ -1,4 +1,4 @@
-import { YachtType } from '../../yacht-type/entities/yacht-type.entity';
+import { YachtCategory } from '../../yacht-type/entities/yacht-type.entity';
 
 export class YachtImage {
   id: number;
@@ -24,9 +24,10 @@ export class Yacht {
   location: string;
   description: string;
   features?: string | null;
-  pricePerDay: number;
-  yachtTypeId: number;
-  yachtType?: YachtType;
+  pricing?: any | null;
+  status: string;
+  yachtCategoryId: number;
+  yachtCategory?: YachtCategory;
   images?: YachtImage[];
   characteristics?: YachtCharacteristic[];
   createdAt: Date;

@@ -12,13 +12,18 @@ export class MunicipalityController {
     return this.municipalityService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number): Promise<Municipality> {
-    return this.municipalityService.findOne(id);
-  }
-
   @Get('by-state/:stateId')
   getByState(@Param('stateId', ParseIntPipe) stateId: number): Promise<ApiResponse<Municipality[]>> {
     return this.municipalityService.getByState(stateId);
+  }
+
+  @Get('by-name/:name')
+  findByName(@Param('name') name: string): Promise<ApiResponse<Municipality>> {
+    return this.municipalityService.findByName(name);
+  }
+
+  @Get(':id')
+  findOne(@Param('id', ParseIntPipe) id: number): Promise<Municipality> {
+    return this.municipalityService.findOne(id);
   }
 } 

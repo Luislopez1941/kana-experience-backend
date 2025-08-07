@@ -13,6 +13,7 @@ import { MunicipalityModule } from './modules/municipality/municipality.module';
 import { ClubModule } from './modules/club/club.module';
 import { ClubTypeModule } from './modules/club-type/club-type.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { LocalitiesModule } from './modules/localities/localities.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -33,6 +34,7 @@ import configuration from './config/configuration';
     MunicipalityModule,
     ClubModule,
     ClubTypeModule,
+    LocalitiesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

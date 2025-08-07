@@ -10,94 +10,94 @@ export class TourTypeService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createTourTypeDto: CreateTourTypeDto): Promise<ApiResponse<TourType>> {
-    // Check if tour type with name already exists
-    const existingTourType = await this.prisma.tourType.findUnique({
+    // Check if tour category with name already exists
+    const existingTourCategory = await this.prisma.tourCategory.findUnique({
       where: { name: createTourTypeDto.name },
     });
 
-    if (existingTourType) {
-      throw new ConflictException('Tour type with this name already exists');
+    if (existingTourCategory) {
+      throw new ConflictException('Tour category with this name already exists');
     }
 
-    const tourType = await this.prisma.tourType.create({
+    const tourCategory = await this.prisma.tourCategory.create({
       data: createTourTypeDto,
     });
 
-    return {data: tourType, status: 'success',  message: 'Tipo de tour creado correctamente'};
+    return {data: tourCategory, status: 'success',  message: 'Categoría de tour creada correctamente'};
   }
 
   async findAll(): Promise<ApiResponse<TourType[]>> {
-    const tourTypes = await this.prisma.tourType.findMany({
+    const tourCategories = await this.prisma.tourCategory.findMany({
       orderBy: { name: 'asc' },
     });
 
-    return {data: tourTypes, status: 'success', message: 'Tipos de tour obtenidos correctamente'};
+    return {data: tourCategories, status: 'success', message: 'Categorías de tour obtenidas correctamente'};
   }
 
   async findOne(id: number): Promise<TourType> {
-    const tourType = await this.prisma.tourType.findUnique({
+    const tourCategory = await this.prisma.tourCategory.findUnique({
       where: { id },
     });
 
-    if (!tourType) {
-      throw new NotFoundException(`Tour type with ID ${id} not found`);
+    if (!tourCategory) {
+      throw new NotFoundException(`Tour category with ID ${id} not found`);
     }
 
-    return tourType;
+    return tourCategory;
   }
 
   async update(id: number, updateTourTypeDto: UpdateTourTypeDto): Promise<ApiResponse<TourType>> {
-    // Check if tour type exists
-    const existingTourType = await this.prisma.tourType.findUnique({
+    // Check if tour category exists
+    const existingTourCategory = await this.prisma.tourCategory.findUnique({
       where: { id },
     });
 
-    if (!existingTourType) {
-      throw new NotFoundException(`Tour type with ID ${id} not found`);
+    if (!existingTourCategory) {
+      throw new NotFoundException(`Tour category with ID ${id} not found`);
     }
 
     // If name is being updated, check if it's already taken
-    if (updateTourTypeDto.name && updateTourTypeDto.name !== existingTourType.name) {
-      const tourTypeWithName = await this.prisma.tourType.findUnique({
+    if (updateTourTypeDto.name && updateTourTypeDto.name !== existingTourCategory.name) {
+      const tourCategoryWithName = await this.prisma.tourCategory.findUnique({
         where: { name: updateTourTypeDto.name },
       });
 
-      if (tourTypeWithName) {
-        throw new ConflictException('Tour type with this name already exists');
+      if (tourCategoryWithName) {
+        throw new ConflictException('Tour category with this name already exists');
       }
     }
 
-    const updatedTourType = await this.prisma.tourType.update({
+    const updatedTourCategory = await this.prisma.tourCategory.update({
       where: { id },
       data: updateTourTypeDto,
     });
 
-    return {data: updatedTourType, status: 'success', message: 'Tipo de tour actualizado correctamente'};
+    return {data: updatedTourCategory, status: 'success', message: 'Categoría de tour actualizada correctamente'};
   }
 
   async remove(id: number): Promise<ApiResponse<{ deleted: boolean }>> {
-    // Check if tour type exists
-    const existingTourType = await this.prisma.tourType.findUnique({
+    // Check if tour category exists
+    const existingTourCategory = await this.prisma.tourCategory.findUnique({
       where: { id },
     });
 
-    if (!existingTourType) {
-      throw new NotFoundException(`Tour type with ID ${id} not found`);
+    if (!existingTourCategory) {
+      throw new NotFoundException(`Tour category with ID ${id} not found`);
     }
 
-    // Check if there are tours using this type
-    const toursWithType = await this.prisma.tour.findMany({
-      where: { tourTypeId: id },
+    // Check if there are tours using this category
+    const toursWithCategory = await this.prisma.tour.findMany({
+      where: { tourCategoryId: id },
     });
 
-    if (toursWithType.length > 0) {
-      throw new ConflictException('Cannot delete tour type that is being used by tours');
+    if (toursWithCategory.length > 0) {
+      throw new ConflictException('Cannot delete tour category that is being used by tours');
     }
 
-    await this.prisma.tourType.delete({
+    await this.prisma.tourCategory.delete({
       where: { id },
     });
 
-    return {data: { deleted: true }, status: 'success', message: 'Tipo de tour eliminado correctamente'};
+    return {data: { deleted: true }, status: 'success', message: 'Categoría de tour eliminada correctamente'};
   }
 } 

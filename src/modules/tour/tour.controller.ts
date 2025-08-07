@@ -20,9 +20,9 @@ export class TourController {
     return this.tourService.findAll();
   }
 
-  @Get('by-type/:tourTypeId')
-  getToursByType(@Param('tourTypeId') tourTypeId: string): Promise<ApiResponse<Tour[]>> {
-    return this.tourService.getToursByType(+tourTypeId);
+  @Get('by-category/:tourCategoryId')
+  getToursByCategory(@Param('tourCategoryId') tourCategoryId: string): Promise<ApiResponse<Tour[]>> {
+    return this.tourService.getToursByCategory(+tourCategoryId);
   }
 
   @Get(':id')

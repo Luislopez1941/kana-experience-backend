@@ -221,6 +221,154 @@ async function main() {
     }
 
     console.log('✅ Municipalities for Quintana Roo created/updated successfully');
+
+    // Create localities for Benito Juárez (Cancún)
+    console.log('📋 Creating localities for Benito Juárez...');
+    
+    const benitoJuarez = await prisma.municipality.findFirst({
+      where: { 
+        name: 'Benito Juárez',
+        stateId: quintanaRoo.id
+      },
+    });
+
+    if (benitoJuarez) {
+      const benitoJuarezLocalities = [
+        'Cancún',
+        'Bonfil',
+        'Zona Hotelera',
+        'Puerto Juárez',
+        'Alfredo V. Bonfil',
+        'El Porvenir',
+        'Leona Vicario',
+        'Isla Mujeres'
+      ];
+
+      for (const localityName of benitoJuarezLocalities) {
+        await prisma.locality.upsert({
+          where: { 
+            id: -1 // This will never match, so it will always create
+          },
+          update: {},
+          create: { 
+            name: localityName,
+            municipalityId: benitoJuarez.id
+          },
+        });
+      }
+
+      console.log('✅ Localities for Benito Juárez created successfully');
+    }
+
+    // Create localities for Solidaridad (Playa del Carmen)
+    console.log('📋 Creating localities for Solidaridad...');
+    
+    const solidaridad = await prisma.municipality.findFirst({
+      where: { 
+        name: 'Solidaridad',
+        stateId: quintanaRoo.id
+      },
+    });
+
+    if (solidaridad) {
+      const solidaridadLocalities = [
+        'Playa del Carmen',
+        'Puerto Aventuras',
+        'Akumal',
+        'Tulum',
+        'Xpu-Ha',
+        'Xcaret',
+        'Paamul',
+        'Chemuyil'
+      ];
+
+      for (const localityName of solidaridadLocalities) {
+        await prisma.locality.upsert({
+          where: { 
+            id: -1
+          },
+          update: {},
+          create: { 
+            name: localityName,
+            municipalityId: solidaridad.id
+          },
+        });
+      }
+
+      console.log('✅ Localities for Solidaridad created successfully');
+    }
+
+    // Create localities for Cozumel
+    console.log('📋 Creating localities for Cozumel...');
+    
+    const cozumel = await prisma.municipality.findFirst({
+      where: { 
+        name: 'Cozumel',
+        stateId: quintanaRoo.id
+      },
+    });
+
+    if (cozumel) {
+      const cozumelLocalities = [
+        'San Miguel de Cozumel',
+        'El Cedral',
+        'El Cidral',
+        'Villa Cozumel',
+        'Punta Molas',
+        'Punta Sur'
+      ];
+
+      for (const localityName of cozumelLocalities) {
+        await prisma.locality.upsert({
+          where: { 
+            id: -1
+          },
+          update: {},
+          create: { 
+            name: localityName,
+            municipalityId: cozumel.id
+          },
+        });
+      }
+
+      console.log('✅ Localities for Cozumel created successfully');
+    }
+
+    // Create localities for Isla Mujeres
+    console.log('📋 Creating localities for Isla Mujeres...');
+    
+    const islaMujeres = await prisma.municipality.findFirst({
+      where: { 
+        name: 'Isla Mujeres',
+        stateId: quintanaRoo.id
+      },
+    });
+
+    if (islaMujeres) {
+      const islaMujeresLocalities = [
+        'Isla Mujeres',
+        'Punta Sur',
+        'Garrafón',
+        'El Centro',
+        'La Gloria',
+        'Salina Grande'
+      ];
+
+      for (const localityName of islaMujeresLocalities) {
+        await prisma.locality.upsert({
+          where: { 
+            id: -1
+          },
+          update: {},
+          create: { 
+            name: localityName,
+            municipalityId: islaMujeres.id
+          },
+        });
+      }
+
+      console.log('✅ Localities for Isla Mujeres created successfully');
+    }
   }
 
   console.log('🎉 Seed completed successfully!');

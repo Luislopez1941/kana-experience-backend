@@ -1,4 +1,4 @@
-export class YachtType {
+export class YachtCategory {
   id: number;
   name: string;
   createdAt: Date;
