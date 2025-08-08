@@ -20,12 +20,12 @@ export class ClubController {
     return this.clubService.findAll();
   }
 
-  @Get('by-type/:typeId')
+  @Get('by-category/:typeId')
   getByType(@Param('typeId', ParseIntPipe) typeId: number): Promise<ApiResponse<Club[]>> {
     return this.clubService.getByType(typeId);
   }
 
-  @Get(':id')
+  @Get('get-by-id/:id')
   findOne(@Param('id', ParseIntPipe) id: number): Promise<Club> {
     return this.clubService.findOne(id);
   }

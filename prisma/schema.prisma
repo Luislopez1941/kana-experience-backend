@@ -96,7 +96,7 @@ model TourCategory {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
-
+ 
 model Tour {
   id            Int        @id @default(autoincrement())
   name          String     // Tour name (e.g., "Tour Isla Mujeres")

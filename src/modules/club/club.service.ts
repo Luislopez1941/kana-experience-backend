@@ -238,9 +238,17 @@ export class ClubService {
   }
 
   async update(id: number, updateClubDto: UpdateClubDto): Promise<ApiResponse<Club>> {
+    // Prepare update data
+    const { images, characteristics, delete_images, phone, website, ...updateData } = updateClubDto;
+
     // Check if club exists
     const existingClub = await this.prisma.club.findUnique({
       where: { id },
+      include: {
+        images: {
+          orderBy: { createdAt: 'asc' }
+        },
+      },
     });
 
     if (!existingClub) {
@@ -299,8 +307,105 @@ export class ClubService {
       }
     }
 
-    const { phone, website, images, characteristics, ...updateData } = updateClubDto;
-    
+    // Process delete_images if provided
+    if (delete_images && delete_images.length > 0) {
+      // Get images to delete by ID
+      const imagesToDelete = await this.prisma.clubImage.findMany({
+        where: {
+          id: { in: delete_images },
+          clubId: id,
+        },
+      });
+
+      if (imagesToDelete.length > 0) {
+        // Delete image files
+        const deleteImagePromises = imagesToDelete.map(image => 
+          this.deleteImage(image.url)
+        );
+        await Promise.all(deleteImagePromises);
+
+        // Delete image records from database
+        await this.prisma.clubImage.deleteMany({
+          where: {
+            id: { in: delete_images },
+            clubId: id,
+          },
+        });
+      }
+    }
+
+    // Process new images if provided
+    if (updateClubDto.images && updateClubDto.images.length > 0) {
+      // Separate existing URLs from new base64 images
+      const existingUrls = updateClubDto.images.filter(img => 
+        typeof img === 'string' && !img.startsWith('data:image')
+      );
+      
+      const newBase64Images = updateClubDto.images.filter(img => 
+        typeof img === 'string' && img.startsWith('data:image')
+      );
+      
+      // Delete existing images that are not in the new list
+      if (existingClub.images.length > 0) {
+        const existingImageUrls = existingClub.images.map(img => img.url);
+        const urlsToKeep = existingUrls.filter(url => existingImageUrls.includes(url));
+        const urlsToDelete = existingImageUrls.filter(url => !urlsToKeep.includes(url));
+        
+        if (urlsToDelete.length > 0) {
+          // Delete image files
+          const deleteImagePromises = urlsToDelete.map(url => 
+            this.deleteImage(url)
+          );
+          await Promise.all(deleteImagePromises);
+
+          // Delete image records from database
+          await this.prisma.clubImage.deleteMany({
+            where: { 
+              clubId: id,
+              url: { in: urlsToDelete }
+            },
+          });
+        }
+      }
+      
+      // Save new base64 images
+      if (newBase64Images.length > 0) {
+        const imagePromises = newBase64Images.map(async (base64, index) => {
+          const filename = `${updateClubDto.name || existingClub.name.replace(/\s+/g, '_').toLowerCase()}_${index + 1}.jpg`;
+          const imageUrl = await this.saveBase64Image(base64, filename);
+          
+          return this.prisma.clubImage.create({
+            data: {
+              url: imageUrl,
+              clubId: id,
+            },
+          });
+        });
+
+        await Promise.all(imagePromises);
+      }
+    }
+
+    // Process new characteristics if provided
+    if (updateClubDto.characteristics && updateClubDto.characteristics.length > 0) {
+      // Delete existing characteristics
+      await this.prisma.clubCharacteristic.deleteMany({
+        where: { clubId: id },
+      });
+      
+      // Save new characteristics
+      const characteristicPromises = updateClubDto.characteristics.map(async (characteristic) => {
+        return this.prisma.clubCharacteristic.create({
+          data: {
+            name: characteristic,
+            clubId: id,
+          },
+        });
+      });
+
+      await Promise.all(characteristicPromises);
+    }
+
     const updatedClub = await this.prisma.club.update({
       where: { id },
       data: updateData,
@@ -318,76 +423,8 @@ export class ClubService {
       },
     });
 
-    // Process new images if provided
-    if (updateClubDto.images && updateClubDto.images.length > 0) {
-      // Delete existing images
-      const existingImages = await this.prisma.clubImage.findMany({
-        where: { clubId: id },
-      });
-
-      for (const image of existingImages) {
-        await this.deleteImage(image.url);
-      }
-
-      await this.prisma.clubImage.deleteMany({
-        where: { clubId: id },
-      });
-
-      // Add new images
-      const imagePromises = updateClubDto.images.map(async (base64, index) => {
-        const filename = `${(updateClubDto.name || existingClub.name).replace(/\s+/g, '_').toLowerCase()}_${index + 1}.jpg`;
-        const imageUrl = await this.saveBase64Image(base64, filename);
-        
-        return this.prisma.clubImage.create({
-          data: {
-            url: imageUrl,
-            clubId: id,
-          },
-        });
-      });
-
-      await Promise.all(imagePromises);
-    }
-
-    // Process new characteristics if provided
-    if (updateClubDto.characteristics && updateClubDto.characteristics.length > 0) {
-      // Delete existing characteristics
-      await this.prisma.clubCharacteristic.deleteMany({
-        where: { clubId: id },
-      });
-
-      // Add new characteristics
-      const characteristicPromises = updateClubDto.characteristics.map(async (characteristic) => {
-        return this.prisma.clubCharacteristic.create({
-          data: {
-            name: characteristic,
-            clubId: id,
-          },
-        });
-      });
-
-      await Promise.all(characteristicPromises);
-    }
-
-    // Fetch updated club with images and characteristics
-    const clubWithImages = await this.prisma.club.findUnique({
-      where: { id },
-      include: {
-        type: true,
-        state: true,
-        municipality: true,
-        locality: true,
-        images: {
-          orderBy: { createdAt: 'asc' }
-        },
-        characteristics: {
-          orderBy: { createdAt: 'asc' }
-        },
-      },
-    });
-
     return {
-      data: clubWithImages!,
+      data: updatedClub,
       status: 'success',
       message: 'Club actualizado correctamente'
     };

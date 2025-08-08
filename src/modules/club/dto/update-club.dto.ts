@@ -30,6 +30,11 @@ export class UpdateClubDto {
 
   @IsOptional()
   @IsArray()
+  @IsNumber({}, { each: true })
+  delete_images?: number[];
+
+  @IsOptional()
+  @IsArray()
   @IsString({ each: true })
   characteristics?: string[];
 
