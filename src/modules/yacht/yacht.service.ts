@@ -1,78 +1,19 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { SupabaseService } from '../../common/services/supabase.service';
 import { CreateYachtDto } from './dto/create-yacht.dto';
 import { UpdateYachtDto } from './dto/update-yacht.dto';
 import { Yacht } from './entities/yacht.entity';
 import { ApiResponse } from './types/api-response.type';
-import * as sharp from 'sharp';
-import * as fs from 'fs-extra';
-import * as path from 'path';
 
 @Injectable()
 export class YachtService {
-  private readonly uploadsDir = 'uploads';
-  private readonly yachtsDir = 'yachts';
+  private readonly storageBucket = 'yachts'; // Bucket de Supabase Storage
 
   constructor(
     private readonly prisma: PrismaService,
-  ) {
-    this.ensureDirectories();
-  }
-
-  private async ensureDirectories(): Promise<void> {
-    const uploadsPath = path.join(process.cwd(), this.uploadsDir);
-    const yachtsPath = path.join(uploadsPath, this.yachtsDir);
-    
-    await fs.ensureDir(uploadsPath);
-    await fs.ensureDir(yachtsPath);
-  }
-
-  private async saveBase64Image(base64Data: string, filename: string): Promise<string> {
-    try {
-      // Remove data:image/...;base64, prefix if present
-      const base64Image = base64Data.replace(/^data:image\/[a-z]+;base64,/, '');
-      
-      // Convert base64 to buffer
-      const imageBuffer = Buffer.from(base64Image, 'base64');
-      
-      // Generate unique filename with timestamp
-      const timestamp = Date.now();
-      
-      // Clean filename: remove special characters and spaces, keep only alphanumeric, dots, and underscores
-      const cleanFilename = filename
-        .replace(/[^a-zA-Z0-9._-]/g, '_') // Replace special characters with underscore
-        .replace(/_+/g, '_') // Replace multiple underscores with single underscore
-        .replace(/^_|_$/g, ''); // Remove leading and trailing underscores
-      
-      const uniqueFilename = `${timestamp}_${cleanFilename}`;
-      const webpFilename = uniqueFilename.replace(/\.[^/.]+$/, '.webp');
-      
-      // Convert to WebP format
-      const webpBuffer = await sharp(imageBuffer)
-        .webp({ quality: 80 })
-        .toBuffer();
-      
-      // Save to file system
-      const filePath = path.join(process.cwd(), this.uploadsDir, this.yachtsDir, webpFilename);
-      await fs.writeFile(filePath, webpBuffer);
-      
-      // Return the relative path for database storage
-      return `${this.uploadsDir}/${this.yachtsDir}/${webpFilename}`;
-    } catch (error) {
-      throw new Error(`Error processing image: ${error.message}`);
-    }
-  }
-
-  private async deleteImage(imagePath: string): Promise<void> {
-    try {
-      const fullPath = path.join(process.cwd(), imagePath);
-      if (await fs.pathExists(fullPath)) {
-        await fs.remove(fullPath);
-      }
-    } catch (error) {
-      console.error(`Error deleting image: ${error.message}`);
-    }
-  }
+    private readonly supabase: SupabaseService,
+  ) {}
 
   async create(createYachtDto: CreateYachtDto): Promise<ApiResponse<Yacht>> {
     // Check if yacht category exists
@@ -97,22 +38,27 @@ export class YachtService {
       data: yachtDataWithPricing,
       include: {
         yachtCategory: true,
-        images: {
-          orderBy: { createdAt: 'asc' }
-        },
-        characteristics: {
-          orderBy: { createdAt: 'asc' }
-        },
+        images: true,
+        characteristics: true,
       },
     });
 
-    // Process images if provided
+    // Process images if provided - Upload to Supabase Storage
     if (createYachtDto.images && createYachtDto.images.length > 0) {
-      const images = createYachtDto.images;
-      const imagePromises = images.map(async (base64, index) => {
-        const filename = `${createYachtDto.name.replace(/\s+/g, '_').toLowerCase()}_${index + 1}.jpg`;
-        const imageUrl = await this.saveBase64Image(base64, filename);
+      const imagePromises = createYachtDto.images.map(async (base64, index) => {
+        const filename = this.supabase.generateUniqueFileName(
+          `${createYachtDto.name.replace(/\s+/g, '_').toLowerCase()}_${index + 1}.webp`,
+          'yacht_'
+        );
         
+        // Upload to Supabase Storage
+        const imageUrl = await this.supabase.uploadBase64Image(
+          this.storageBucket,
+          filename,
+          base64
+        );
+        
+        // Save image reference to database
         return this.prisma.yachtImage.create({
           data: {
             url: imageUrl,
@@ -143,12 +89,8 @@ export class YachtService {
       where: { id: yacht.id },
       include: {
         yachtCategory: true,
-        images: {
-          orderBy: { createdAt: 'asc' }
-        },
-        characteristics: {
-          orderBy: { createdAt: 'asc' }
-        },
+        images: true,
+        characteristics: true,
       },
     });
 
@@ -241,7 +183,7 @@ export class YachtService {
       if (imagesToDelete.length > 0) {
         // Delete image files
         const deleteImagePromises = imagesToDelete.map(image => 
-          this.deleteImage(image.url)
+          this.supabase.deleteImage(this.storageBucket, image.url)
         );
         await Promise.all(deleteImagePromises);
 
@@ -275,7 +217,7 @@ export class YachtService {
         if (urlsToDelete.length > 0) {
           // Delete image files
           const deleteImagePromises = urlsToDelete.map(url => 
-            this.deleteImage(url)
+            this.supabase.deleteImage(this.storageBucket, url)
           );
           await Promise.all(deleteImagePromises);
 
@@ -292,8 +234,15 @@ export class YachtService {
       // Save new base64 images
       if (newBase64Images.length > 0) {
         const imagePromises = newBase64Images.map(async (base64, index) => {
-          const filename = `${updateYachtDto.name || existingYacht.name.replace(/\s+/g, '_').toLowerCase()}_${index + 1}.jpg`;
-          const imageUrl = await this.saveBase64Image(base64, filename);
+          const filename = this.supabase.generateUniqueFileName(
+            `${updateYachtDto.name || existingYacht.name.replace(/\s+/g, '_').toLowerCase()}_${index + 1}.webp`,
+            'yacht_'
+          );
+          const imageUrl = await this.supabase.uploadBase64Image(
+            this.storageBucket,
+            filename,
+            base64
+          );
           
           return this.prisma.yachtImage.create({
             data: {
@@ -367,7 +316,7 @@ export class YachtService {
     // Delete image files if they exist
     if (existingYacht.images.length > 0) {
       const deleteImagePromises = existingYacht.images.map(image => 
-        this.deleteImage(image.url)
+        this.supabase.deleteImage(this.storageBucket, image.url)
       );
       await Promise.all(deleteImagePromises);
     }

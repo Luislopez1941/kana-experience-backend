@@ -7,7 +7,7 @@ import { ApiResponse } from './types/api-response.type';
 import { YachtCategory } from './entities/yacht-type.entity';
 import { Yacht } from '../yacht/entities/yacht.entity';
 
-@Controller('yacht-types')
+@Controller('yacht-categories')
 export class YachtTypeController {
   constructor(
     private readonly yachtTypeService: YachtTypeService,

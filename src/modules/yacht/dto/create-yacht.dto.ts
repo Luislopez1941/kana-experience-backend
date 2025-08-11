@@ -2,15 +2,19 @@ import { IsString, IsNotEmpty, IsNumber, IsOptional, IsUrl, Min, MinLength, IsAr
 import { Type } from 'class-transformer';
 
 class PricingItemDto {
+  @IsOptional()
+  @IsString()
+  hour?: string;  // Para formato "09:00", "14:00"
+
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  @Type(() => Number)
-  hora: number;
+  hours?: number;  // Para formato 8, 9, 10 (horas)
 
   @IsNumber()
   @Min(0)
   @Type(() => Number)
-  precio: number;
+  price: number;
 }
 
 export class CreateYachtDto {

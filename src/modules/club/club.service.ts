@@ -1,61 +1,33 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { SupabaseService } from '../../common/services/supabase.service';
 import { Club } from './entities/club.entity';
 import { CreateClubDto } from './dto/create-club.dto';
 import { UpdateClubDto } from './dto/update-club.dto';
 import { ApiResponse } from './types/api-response.type';
-import * as sharp from 'sharp';
-import * as fs from 'fs-extra';
-import * as path from 'path';
 
 @Injectable()
 export class ClubService {
-  private readonly uploadsDir = 'uploads';
-  private readonly clubsDir = 'clubs';
+  private readonly storageBucket = 'clubs'; // Bucket de Supabase Storage
 
-  constructor(private readonly prisma: PrismaService) {
-    this.ensureDirectories();
-  }
-
-  private async ensureDirectories(): Promise<void> {
-    const uploadsPath = path.join(process.cwd(), this.uploadsDir);
-    const clubsPath = path.join(uploadsPath, this.clubsDir);
-    
-    await fs.ensureDir(uploadsPath);
-    await fs.ensureDir(clubsPath);
-  }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly supabase: SupabaseService,
+  ) {}
 
   private async saveBase64Image(base64Data: string, filename: string): Promise<string> {
     try {
-      // Remove data:image/...;base64, prefix if present
-      const base64Image = base64Data.replace(/^data:image\/[a-z]+;base64,/, '');
+      // Generar nombre único para el archivo
+      const uniqueFilename = this.supabase.generateUniqueFileName(filename, 'club_');
       
-      // Convert base64 to buffer
-      const imageBuffer = Buffer.from(base64Image, 'base64');
+      // Upload a Supabase Storage
+      const imageUrl = await this.supabase.uploadBase64Image(
+        this.storageBucket,
+        uniqueFilename,
+        base64Data
+      );
       
-      // Generate unique filename with timestamp
-      const timestamp = Date.now();
-      
-      // Clean filename: remove special characters and spaces, keep only alphanumeric, dots, and underscores
-      const cleanFilename = filename
-        .replace(/[^a-zA-Z0-9._-]/g, '_') // Replace special characters with underscore
-        .replace(/_+/g, '_') // Replace multiple underscores with single underscore
-        .replace(/^_|_$/g, ''); // Remove leading and trailing underscores
-      
-      const uniqueFilename = `${timestamp}_${cleanFilename}`;
-      const webpFilename = uniqueFilename.replace(/\.[^/.]+$/, '.webp');
-      
-      // Convert to WebP format
-      const webpBuffer = await sharp(imageBuffer)
-        .webp({ quality: 80 })
-        .toBuffer();
-      
-      // Save to file system
-      const filePath = path.join(process.cwd(), this.uploadsDir, this.clubsDir, webpFilename);
-      await fs.writeFile(filePath, webpBuffer);
-      
-      // Return the relative path for database storage
-      return `${this.uploadsDir}/${this.clubsDir}/${webpFilename}`;
+      return imageUrl;
     } catch (error) {
       throw new Error(`Error processing image: ${error.message}`);
     }
@@ -63,9 +35,10 @@ export class ClubService {
 
   private async deleteImage(imagePath: string): Promise<void> {
     try {
-      const fullPath = path.join(process.cwd(), imagePath);
-      if (await fs.pathExists(fullPath)) {
-        await fs.remove(fullPath);
+      // Extraer solo el nombre del archivo de la URL completa
+      const filename = imagePath.split('/').pop();
+      if (filename) {
+        await this.supabase.deleteImage(this.storageBucket, filename);
       }
     } catch (error) {
       console.error(`Error deleting image: ${error.message}`);

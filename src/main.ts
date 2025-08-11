@@ -3,7 +3,6 @@ import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { json, urlencoded } from 'express';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { join } from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -11,11 +10,6 @@ async function bootstrap() {
   // Increase payload size limit for base64 images
   app.use(json({ limit: '500mb' }));
   app.use(urlencoded({ limit: '500mb', extended: true }));
-  
-  // Serve static files from uploads directory
-  app.useStaticAssets(join(process.cwd(), 'uploads'), {
-    prefix: '/uploads/',
-  });
   
   // Enable CORS with permissive settings
   app.enableCors({
@@ -38,6 +32,6 @@ async function bootstrap() {
     }),
   );
   
-  await app.listen(process.env.PORT ?? 3005);
+  await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();

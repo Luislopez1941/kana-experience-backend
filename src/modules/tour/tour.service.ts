@@ -1,52 +1,33 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { SupabaseService } from '../../common/services/supabase.service';
 import { CreateTourDto } from './dto/create-tour.dto';
 import { UpdateTourDto } from './dto/update-tour.dto';
 import { Tour } from './entities/tour.entity';
 import { ApiResponse } from './types/api-response.type';
-import * as fs from 'fs-extra';
-import * as path from 'path';
-import * as sharp from 'sharp';
 
 @Injectable()
 export class TourService {
-  private readonly uploadsDir = 'uploads';
-  private readonly toursDir = 'tours';
+  private readonly storageBucket = 'tours'; // Bucket de Supabase Storage
 
   constructor(
     private readonly prisma: PrismaService,
-  ) {
-    this.ensureDirectories();
-  }
-
-  private async ensureDirectories(): Promise<void> {
-    const uploadsPath = path.join(process.cwd(), this.uploadsDir);
-    const toursPath = path.join(uploadsPath, this.toursDir);
-    
-    await fs.ensureDir(uploadsPath);
-    await fs.ensureDir(toursPath);
-  }
+    private readonly supabase: SupabaseService,
+  ) {}
 
   private async saveBase64Image(base64Data: string, filename: string): Promise<string> {
     try {
-      const base64Image = base64Data.replace(/^data:image\/[a-z]+;base64,/, '');
-      const imageBuffer = Buffer.from(base64Image, 'base64');
-      const timestamp = Date.now();
+      // Generar nombre único para el archivo
+      const uniqueFilename = this.supabase.generateUniqueFileName(filename, 'tour_');
       
-      // Clean filename: remove special characters and spaces, keep only alphanumeric, dots, and underscores
-      const cleanFilename = filename
-        .replace(/[^a-zA-Z0-9._-]/g, '_') // Replace special characters with underscore
-        .replace(/_+/g, '_') // Replace multiple underscores with single underscore
-        .replace(/^_|_$/g, ''); // Remove leading and trailing underscores
+      // Upload a Supabase Storage
+      const imageUrl = await this.supabase.uploadBase64Image(
+        this.storageBucket,
+        uniqueFilename,
+        base64Data
+      );
       
-      const uniqueFilename = `${timestamp}_${cleanFilename}`;
-      const webpFilename = uniqueFilename.replace(/\.[^/.]+$/, '.webp');
-      
-      const webpBuffer = await sharp(imageBuffer).webp({ quality: 80 }).toBuffer();
-      const filePath = path.join(process.cwd(), this.uploadsDir, this.toursDir, webpFilename);
-      await fs.writeFile(filePath, webpBuffer);
-      
-      return `${this.uploadsDir}/${this.toursDir}/${webpFilename}`;
+      return imageUrl;
     } catch (error) {
       throw new Error(`Error processing image: ${error.message}`);
     }
@@ -54,9 +35,10 @@ export class TourService {
 
   private async deleteImage(imagePath: string): Promise<void> {
     try {
-      const fullPath = path.join(process.cwd(), imagePath);
-      if (await fs.pathExists(fullPath)) {
-        await fs.remove(fullPath);
+      // Extraer solo el nombre del archivo de la URL completa
+      const filename = imagePath.split('/').pop();
+      if (filename) {
+        await this.supabase.deleteImage(this.storageBucket, filename);
       }
     } catch (error) {
       console.error(`Error deleting image ${imagePath}:`, error);
