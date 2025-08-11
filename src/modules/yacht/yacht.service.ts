@@ -182,9 +182,14 @@ export class YachtService {
 
       if (imagesToDelete.length > 0) {
         // Delete image files
-        const deleteImagePromises = imagesToDelete.map(image => 
-          this.supabase.deleteImage(this.storageBucket, image.url)
-        );
+        const deleteImagePromises = imagesToDelete.map(image => {
+          // Extraer solo el nombre del archivo de la URL completa
+          const filename = image.url.split('/').pop();
+          if (!filename) {
+            throw new Error(`Invalid image URL: ${image.url}`);
+          }
+          return this.supabase.deleteImage(this.storageBucket, filename);
+        });
         await Promise.all(deleteImagePromises);
 
         // Delete image records from database
@@ -216,9 +221,14 @@ export class YachtService {
         
         if (urlsToDelete.length > 0) {
           // Delete image files
-          const deleteImagePromises = urlsToDelete.map(url => 
-            this.supabase.deleteImage(this.storageBucket, url)
-          );
+          const deleteImagePromises = urlsToDelete.map(url => {
+            // Extraer solo el nombre del archivo de la URL completa
+            const filename = url.split('/').pop();
+            if (!filename) {
+              throw new Error(`Invalid image URL: ${url}`);
+            }
+            return this.supabase.deleteImage(this.storageBucket, filename);
+          });
           await Promise.all(deleteImagePromises);
 
           // Delete image records from database
@@ -315,9 +325,14 @@ export class YachtService {
 
     // Delete image files if they exist
     if (existingYacht.images.length > 0) {
-      const deleteImagePromises = existingYacht.images.map(image => 
-        this.supabase.deleteImage(this.storageBucket, image.url)
-      );
+      const deleteImagePromises = existingYacht.images.map(image => {
+        // Extraer solo el nombre del archivo de la URL completa
+        const filename = image.url.split('/').pop();
+        if (!filename) {
+          throw new Error(`Invalid image URL: ${image.url}`);
+        }
+        return this.supabase.deleteImage(this.storageBucket, filename);
+      });
       await Promise.all(deleteImagePromises);
     }
 
@@ -327,29 +342,28 @@ export class YachtService {
     });
   }
 
-  async getYachtsByYachtCategory(yachtCategoryId: number, page: number = 1): Promise<ApiResponse<Yacht[]>> {
+  async getYachtsByYachtCategory(yachtCategoryId: number, page: number): Promise<ApiResponse<Yacht[]>> {
     const limit = 8; // Límite estático de 8 elementos por página
     const skip = (page - 1) * limit;
     
     // If yachtCategoryId is 0, return all yachts with pagination
     if (yachtCategoryId === 0) {
-      const [yachts, total] = await Promise.all([
-        this.prisma.yacht.findMany({
-          include: {
-            yachtCategory: true,
-            images: {
-              orderBy: { createdAt: 'asc' }
-            },
-            characteristics: {
-              orderBy: { createdAt: 'asc' }
-            },
+      const yachts = await this.prisma.yacht.findMany({
+        include: {
+          yachtCategory: true,
+          images: {
+            orderBy: { createdAt: 'asc' }
           },
-          orderBy: { name: 'asc' },
-          skip,
-          take: limit,
-        }),
-        this.prisma.yacht.count(),
-      ]);
+          characteristics: {
+            orderBy: { createdAt: 'asc' }
+          },
+        },
+        orderBy: { name: 'asc' },
+        skip,
+        take: limit,
+      });
+      
+      const total = await this.prisma.yacht.count();
 
       const totalPages = Math.ceil(total / limit);
 
@@ -377,26 +391,25 @@ export class YachtService {
       throw new NotFoundException(`Yacht category with ID ${yachtCategoryId} not found`);
     }
 
-    const [yachts, total] = await Promise.all([
-      this.prisma.yacht.findMany({
-        where: { yachtCategoryId },
-        include: {
-          yachtCategory: true,
-          images: {
-            orderBy: { createdAt: 'asc' }
-          },
-          characteristics: {
-            orderBy: { createdAt: 'asc' }
-          },
+    const yachts = await this.prisma.yacht.findMany({
+      where: { yachtCategoryId },
+      include: {
+        yachtCategory: true,
+        images: {
+          orderBy: { createdAt: 'asc' }
         },
-        orderBy: { name: 'asc' },
-        skip,
-        take: limit,
-      }),
-      this.prisma.yacht.count({
-        where: { yachtCategoryId },
-      }),
-    ]);
+        characteristics: {
+          orderBy: { createdAt: 'asc' }
+        },
+      },
+      orderBy: { name: 'asc' },
+      skip,
+      take: limit,
+    });
+    
+    const total = await this.prisma.yacht.count({
+      where: { yachtCategoryId },
+    });
 
     const totalPages = Math.ceil(total / limit);
 

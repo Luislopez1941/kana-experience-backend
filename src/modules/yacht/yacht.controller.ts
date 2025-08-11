@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, Query } from '@nestjs/common';
 import { YachtService } from './yacht.service';
 import { CreateYachtDto } from './dto/create-yacht.dto';
 import { UpdateYachtDto } from './dto/update-yacht.dto';
@@ -23,7 +23,7 @@ export class YachtController {
   @Post('by-category')
   getYachtsByYachtCategory(
     @Body('yachtCategoryId') yachtCategoryId: number,
-    @Body('page') page: number,
+    @Body('page') page: number = 1,
   ): Promise<ApiResponse<Yacht[]>> {
     return this.yachtService.getYachtsByYachtCategory(yachtCategoryId, page);
   }
