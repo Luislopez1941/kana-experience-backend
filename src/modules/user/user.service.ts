@@ -1,16 +1,16 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { User } from './entities/user.entity';
-import { PrismaService } from '../../prisma/prisma.service';
+import { User, UserResponseDto } from './entities/user.entity';
 import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class UserService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createUserDto: CreateUserDto): Promise<User> {
-    // Check if user with email already exists
+  async create(createUserDto: CreateUserDto): Promise<UserResponseDto> {
+    // Check if user already exists
     const existingUser = await this.prisma.user.findUnique({
       where: { email: createUserDto.email },
     });
@@ -38,10 +38,10 @@ export class UserService {
 
     // Remove password from response
     const { password, ...userWithoutPassword } = user;
-    return userWithoutPassword as User;
+    return userWithoutPassword as unknown as UserResponseDto;
   }
 
-  async findAll(): Promise<User[]> {
+  async findAll(): Promise<UserResponseDto[]> {
     const users = await this.prisma.user.findMany({
       include: {
         parent: true,
@@ -51,10 +51,10 @@ export class UserService {
     });
 
     // Remove passwords from response
-    return users.map(({ password, ...user }) => user as User);
+    return users.map(({ password, ...user }) => user as unknown as UserResponseDto);
   }
 
-  async findOne(id: number): Promise<User> {
+  async findOne(id: number): Promise<UserResponseDto> {
     const user = await this.prisma.user.findUnique({
       where: { id },
       include: {
@@ -70,10 +70,10 @@ export class UserService {
 
     // Remove password from response
     const { password, ...userWithoutPassword } = user;
-    return userWithoutPassword as User;
+    return userWithoutPassword as unknown as UserResponseDto;
   }
 
-  async findByEmail(email: string): Promise<User | null> {
+  async findByEmail(email: string): Promise<UserResponseDto | null> {
     const user = await this.prisma.user.findUnique({
       where: { email },
       include: {
@@ -87,10 +87,25 @@ export class UserService {
       return null;
     }
 
-    return user as User;
+    // Remove password from response
+    const { password, ...userWithoutPassword } = user;
+    return userWithoutPassword as unknown as UserResponseDto;
   }
 
-  async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
+  async findByEmailWithPassword(email: string): Promise<User | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      include: {
+        parent: true,
+        subUsers: true,
+        role: true,
+      },
+    });
+
+    return user as unknown as User;
+  }
+
+  async update(id: number, updateUserDto: UpdateUserDto): Promise<UserResponseDto> {
     // Check if user exists
     const existingUser = await this.prisma.user.findUnique({
       where: { id },
@@ -133,10 +148,10 @@ export class UserService {
 
     // Remove password from response
     const { password, ...userWithoutPassword } = updatedUser;
-    return userWithoutPassword as User;
+    return userWithoutPassword as unknown as UserResponseDto;
   }
 
-  async remove(id: number): Promise<void> {
+  async remove(id: number): Promise<{ deleted: boolean }> {
     // Check if user exists
     const existingUser = await this.prisma.user.findUnique({
       where: { id },
@@ -150,7 +165,40 @@ export class UserService {
     await this.prisma.user.delete({
       where: { id },
     });
+
+    return { deleted: true };
   }
 
+  async findSubUsers(parentId: number): Promise<UserResponseDto[]> {
+    const subUsers = await this.prisma.user.findMany({
+      where: { parentId },
+      include: {
+        parent: true,
+        subUsers: true,
+        role: true,
+      },
+    });
 
+    // Remove passwords from response
+    return subUsers.map(({ password, ...user }) => user as unknown as UserResponseDto);
+  }
+
+  async findWithSubUsers(id: number): Promise<UserResponseDto> {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      include: {
+        parent: true,
+        subUsers: true,
+        role: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+
+    // Remove password from response
+    const { password, ...userWithoutPassword } = user;
+    return userWithoutPassword as unknown as UserResponseDto;
+  }
 }

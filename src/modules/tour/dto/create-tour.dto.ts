@@ -66,4 +66,20 @@ export class CreateTourDto {
   @IsOptional()
   @IsString({ each: true })
   characteristics?: string[];
+
+  @IsNumber()
+  @IsNotEmpty()
+  userId: number;
+
+  @IsNumber()
+  @IsNotEmpty()
+  stateId: number;
+
+  @IsNumber()
+  @IsNotEmpty()
+  municipalityId: number;
+
+  @IsNumber()
+  @IsNotEmpty()
+  localityId: number;
 } 

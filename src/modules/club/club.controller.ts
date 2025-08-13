@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, HttpCode, HttpStatus } from '@nestjs/common';
-import { ClubService } from './club.service';
+import { ClubService, FilterClubsDto } from './club.service';
 import { CreateClubDto } from './dto/create-club.dto';
 import { UpdateClubDto } from './dto/update-club.dto';
 import { Club } from './entities/club.entity';
@@ -15,9 +15,9 @@ export class ClubController {
     return this.clubService.create(createClubDto);
   }
 
-  @Get('get-all')
-  findAll(): Promise<ApiResponse<Club[]>> {
-    return this.clubService.findAll();
+  @Post('get-by-ids')
+  findAll(@Body() filterDto: FilterClubsDto): Promise<ApiResponse<Club[]>> {
+    return this.clubService.findAll(filterDto);
   }
 
   @Get('by-category/:typeId')

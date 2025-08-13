@@ -34,12 +34,21 @@ model User {
   secondLastName String?
   phoneNumber    String?
   profileImage   String?  // You can store a URL or path here
+  typeUser       String   // Tipo de usuario
   roleId         Int
   role           Role     @relation(fields: [roleId], references: [id])
 
   parentId       Int?
   parent         User?    @relation("UserToSubUsers", fields: [parentId], references: [id])
   subUsers       User[]   @relation("UserToSubUsers")
+
+  // Relaciones con otros modelos
+  yachts         Yacht[]
+  yachtCategories YachtCategory[]
+  tours          Tour[]
+  tourCategories TourCategory[]
+  clubs          Club[]
+  clubTypes      ClubType[]
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -49,6 +58,17 @@ model YachtCategory {
   id        Int      @id @default(autoincrement())
   name      String   @unique
   yachts    Yacht[]
+  userId    Int      // ID del usuario que creó esta categoría
+  user      User     @relation(fields: [userId], references: [id])
+  
+  // Campos de ubicación
+  stateId         Int
+  state           State      @relation(fields: [stateId], references: [id], onDelete: Cascade)
+  municipalityId  Int
+  municipality    Municipality @relation(fields: [municipalityId], references: [id], onDelete: Cascade)
+  localityId      Int
+  locality        Locality   @relation(fields: [localityId], references: [id], onDelete: Cascade)
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -65,6 +85,17 @@ model Yacht {
   status          String     @default("Activo") // Status: "Activo" or "Inactivo"
   yachtCategoryId Int
   yachtCategory   YachtCategory  @relation(fields: [yachtCategoryId], references: [id])
+  userId          Int        // ID del usuario que creó este yate
+  user            User       @relation(fields: [userId], references: [id])
+  
+  // Campos de ubicación
+  stateId         Int
+  state           State      @relation(fields: [stateId], references: [id], onDelete: Cascade)
+  municipalityId  Int
+  municipality    Municipality @relation(fields: [municipalityId], references: [id], onDelete: Cascade)
+  localityId      Int
+  locality        Locality   @relation(fields: [localityId], references: [id], onDelete: Cascade)
+  
   images          YachtImage[]
   characteristics YachtCharacteristic[]
   createdAt       DateTime   @default(now())
@@ -93,6 +124,17 @@ model TourCategory {
   id        Int      @id @default(autoincrement())
   name      String   @unique
   tours     Tour[]
+  userId    Int      // ID del usuario que creó esta categoría
+  user      User     @relation(fields: [userId], references: [id])
+  
+  // Campos de ubicación
+  stateId         Int
+  state           State      @relation(fields: [stateId], references: [id], onDelete: Cascade)
+  municipalityId  Int
+  municipality    Municipality @relation(fields: [municipalityId], references: [id], onDelete: Cascade)
+  localityId      Int
+  locality        Locality   @relation(fields: [localityId], references: [id], onDelete: Cascade)
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -113,6 +155,17 @@ model Tour {
   
   tourCategoryId Int
   tourCategory   TourCategory   @relation(fields: [tourCategoryId], references: [id])
+  userId         Int            // ID del usuario que creó este tour
+  user           User           @relation(fields: [userId], references: [id])
+  
+  // Campos de ubicación
+  stateId        Int
+  state          State     @relation(fields: [stateId], references: [id], onDelete: Cascade)
+  municipalityId Int
+  municipality   Municipality @relation(fields: [municipalityId], references: [id], onDelete: Cascade)
+  localityId     Int
+  locality       Locality  @relation(fields: [localityId], references: [id], onDelete: Cascade)
+  
   images        TourImage[]
   characteristics TourCharacteristic[]
   createdAt     DateTime   @default(now())
@@ -142,6 +195,11 @@ model State {
   name          String        @unique
   municipalities Municipality[]
   clubs         Club[]
+  yachts        Yacht[]       // Yates en este estado
+  tours         Tour[]        // Tours en este estado
+  yachtCategories YachtCategory[] // Categorías de yates en este estado
+  tourCategories TourCategory[]   // Categorías de tours en este estado
+  clubTypes     ClubType[]    // Tipos de clubs en este estado
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 }
@@ -153,6 +211,11 @@ model Municipality {
   state       State      @relation(fields: [stateId], references: [id], onDelete: Cascade)
   localities  Locality[]
   clubs       Club[]
+  yachts      Yacht[]    // Yates en este municipio
+  tours       Tour[]     // Tours en este municipio
+  yachtCategories YachtCategory[] // Categorías de yates en este municipio
+  tourCategories TourCategory[]   // Categorías de tours en este municipio
+  clubTypes   ClubType[] // Tipos de clubs en este municipio
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 }
@@ -163,6 +226,11 @@ model Locality {
   municipalityId Int
   municipality   Municipality @relation(fields: [municipalityId], references: [id], onDelete: Cascade)
   clubs          Club[]
+  yachts         Yacht[]      // Yates en esta localidad
+  tours          Tour[]       // Tours en esta localidad
+  yachtCategories YachtCategory[] // Categorías de yates en esta localidad
+  tourCategories TourCategory[]   // Categorías de tours en esta localidad
+  clubTypes      ClubType[]   // Tipos de clubs en esta localidad
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 }
@@ -188,6 +256,9 @@ model Club {
 
   localityId     Int
   locality       Locality   @relation(fields: [localityId], references: [id], onDelete: Cascade)
+
+  userId         Int        // ID del usuario que creó este club
+  user           User       @relation(fields: [userId], references: [id])
 
   images         ClubImage[]
   characteristics ClubCharacteristic[]
@@ -217,6 +288,17 @@ model ClubType {
   id        Int      @id @default(autoincrement())
   name      String   @unique
   clubs     Club[]
+  userId    Int      // ID del usuario que creó este tipo de club
+  user      User     @relation(fields: [userId], references: [id])
+  
+  // Campos de ubicación
+  stateId         Int
+  state           State      @relation(fields: [stateId], references: [id], onDelete: Cascade)
+  municipalityId  Int
+  municipality    Municipality @relation(fields: [municipalityId], references: [id], onDelete: Cascade)
+  localityId      Int
+  locality        Locality   @relation(fields: [localityId], references: [id], onDelete: Cascade)
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

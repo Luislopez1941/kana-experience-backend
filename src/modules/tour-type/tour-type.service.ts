@@ -5,6 +5,14 @@ import { UpdateTourTypeDto } from './dto/update-tour-type.dto';
 import { TourType } from './entities/tour-type.entity';
 import { ApiResponse } from './types/api-response.type';
 
+// DTO para filtrar categorías de tours
+export interface FilterTourCategoriesDto {
+  stateId?: number;
+  municipalityId?: number;
+  localityId?: number;
+  userId?: number;
+}
+
 @Injectable()
 export class TourTypeService {
   constructor(private readonly prisma: PrismaService) {}
@@ -26,8 +34,27 @@ export class TourTypeService {
     return {data: tourCategory, status: 'success',  message: 'Categoría de tour creada correctamente'};
   }
 
-  async findAll(): Promise<ApiResponse<TourType[]>> {
+  async findAll(filterDto?: FilterTourCategoriesDto): Promise<ApiResponse<TourType[]>> {
+    let whereClause: any = {};
+
+    // Aplicar filtros si se proporcionan
+    if (filterDto) {
+      if (filterDto.stateId) {
+        whereClause.stateId = filterDto.stateId;
+      }
+      if (filterDto.municipalityId) {
+        whereClause.municipalityId = filterDto.municipalityId;
+      }
+      if (filterDto.localityId) {
+        whereClause.localityId = filterDto.localityId;
+      }
+      if (filterDto.userId) {
+        whereClause.userId = filterDto.userId;
+      }
+    }
+
     const tourCategories = await this.prisma.tourCategory.findMany({
+      where: whereClause,
       orderBy: { name: 'asc' },
     });
 

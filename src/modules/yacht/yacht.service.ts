@@ -6,6 +6,16 @@ import { UpdateYachtDto } from './dto/update-yacht.dto';
 import { Yacht } from './entities/yacht.entity';
 import { ApiResponse } from './types/api-response.type';
 
+// DTO para filtrar yates
+export interface FilterYachtsDto {
+  stateId?: number;
+  municipalityId?: number;
+  localityId?: number;
+  userId?: number;
+  yachtCategoryId?: number;
+  status?: string;
+}
+
 @Injectable()
 export class YachtService {
   private readonly storageBucket = 'yachts'; // Bucket de Supabase Storage
@@ -16,6 +26,20 @@ export class YachtService {
   ) {}
 
   async create(createYachtDto: CreateYachtDto): Promise<ApiResponse<Yacht>> {
+    // Validar permisos del usuario - solo SUPER_ADMIN puede crear yates
+    const user = await this.prisma.user.findUnique({
+      where: { id: createYachtDto.userId },
+      select: { typeUser: true }
+    });
+
+    if (!user) {
+      throw new NotFoundException(`Usuario con ID ${createYachtDto.userId} no encontrado`);
+    }
+
+    if (user.typeUser !== 'SUPER_ADMIN') {
+      throw new ConflictException('Este usuario no está permitido crear yates. Solo los usuarios SUPER_ADMIN pueden crear yates.');
+    }
+
     // Check if yacht category exists
     const yachtCategory = await this.prisma.yachtCategory.findUnique({
       where: { id: createYachtDto.yachtCategoryId },
@@ -45,9 +69,11 @@ export class YachtService {
 
     // Process images if provided - Upload to Supabase Storage
     if (createYachtDto.images && createYachtDto.images.length > 0) {
-      const imagePromises = createYachtDto.images.map(async (base64, index) => {
+      // Procesar las imágenes en el orden exacto del array
+      for (let i = 0; i < createYachtDto.images.length; i++) {
+        const base64 = createYachtDto.images[i];
         const filename = this.supabase.generateUniqueFileName(
-          `${createYachtDto.name.replace(/\s+/g, '_').toLowerCase()}_${index + 1}.webp`,
+          `${createYachtDto.name.replace(/\s+/g, '_').toLowerCase()}_${i + 1}.webp`,
           'yacht_'
         );
         
@@ -59,15 +85,13 @@ export class YachtService {
         );
         
         // Save image reference to database
-        return this.prisma.yachtImage.create({
+        await this.prisma.yachtImage.create({
           data: {
             url: imageUrl,
             yachtId: yacht.id,
           },
         });
-      });
-
-      await Promise.all(imagePromises);
+      }
     }
 
     // Process characteristics if provided
@@ -97,8 +121,33 @@ export class YachtService {
     return {data: yachtWithImages!, status: 'success', message: 'Embarcación creada correctamente'};
   }
 
-  async findAll(): Promise<ApiResponse<Yacht[]>> {
+  async findAll(filterDto?: FilterYachtsDto): Promise<ApiResponse<Yacht[]>> {
+    let whereClause: any = {};
+
+    // Aplicar filtros si se proporcionan
+    if (filterDto) {
+      if (filterDto.stateId) {
+        whereClause.stateId = filterDto.stateId;
+      }
+      if (filterDto.municipalityId) {
+        whereClause.municipalityId = filterDto.municipalityId;
+      }
+      if (filterDto.localityId) {
+        whereClause.localityId = filterDto.localityId;
+      }
+      if (filterDto.userId) {
+        whereClause.userId = filterDto.userId;
+      }
+      if (filterDto.yachtCategoryId) {
+        whereClause.yachtCategoryId = filterDto.yachtCategoryId;
+      }
+      if (filterDto.status) {
+        whereClause.status = filterDto.status;
+      }
+    }
+
     const yachts = await this.prisma.yacht.findMany({
+      where: whereClause,
       include: {
         yachtCategory: true,
         images: {
@@ -109,6 +158,7 @@ export class YachtService {
         },
       },
       orderBy: { name: 'asc' },
+      take: 8, // Límite de 8 elementos
     });
 
     return {data: yachts, status: 'success', message: 'Embarcaciones obtenidas correctamente'};
@@ -136,6 +186,20 @@ export class YachtService {
   }
 
   async update(id: number, updateYachtDto: UpdateYachtDto): Promise<ApiResponse<Yacht>> {
+    // Validar permisos del usuario - solo SUPER_ADMIN puede actualizar yates
+    const user = await this.prisma.user.findUnique({
+      where: { id: updateYachtDto.userId },
+      select: { typeUser: true }
+    });
+
+    if (!user) {
+      throw new NotFoundException(`Usuario con ID ${updateYachtDto.userId} no encontrado`);
+    }
+
+    if (user.typeUser !== 'SUPER_ADMIN') {
+      throw new ConflictException('Este usuario no está permitido actualizar yates. Solo los usuarios SUPER_ADMIN pueden actualizar yates.');
+    }
+
     // Prepare update data
     const { images, characteristics, delete_images, pricing, ...updateData } = updateYachtDto;
 
@@ -243,9 +307,11 @@ export class YachtService {
       
       // Save new base64 images
       if (newBase64Images.length > 0) {
-        const imagePromises = newBase64Images.map(async (base64, index) => {
+        // Procesar las imágenes en el orden exacto del array
+        for (let i = 0; i < newBase64Images.length; i++) {
+          const base64 = newBase64Images[i];
           const filename = this.supabase.generateUniqueFileName(
-            `${updateYachtDto.name || existingYacht.name.replace(/\s+/g, '_').toLowerCase()}_${index + 1}.webp`,
+            `${updateYachtDto.name || existingYacht.name.replace(/\s+/g, '_').toLowerCase()}_${i + 1}.webp`,
             'yacht_'
           );
           const imageUrl = await this.supabase.uploadBase64Image(
@@ -254,15 +320,13 @@ export class YachtService {
             base64
           );
           
-          return this.prisma.yachtImage.create({
+          await this.prisma.yachtImage.create({
             data: {
               url: imageUrl,
               yachtId: id,
             },
           });
-        });
-
-        await Promise.all(imagePromises);
+        }
       }
     }
 
@@ -305,7 +369,21 @@ export class YachtService {
     return {data: updatedYacht, status: 'success', message: 'Embarcación actualizada correctamente'};
   }
 
-  async remove(id: number): Promise<void> {
+  async remove(id: number, userId: number): Promise<void> {
+    // Validar permisos del usuario - solo SUPER_ADMIN puede eliminar yates
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { typeUser: true }
+    });
+
+    if (!user) {
+      throw new NotFoundException(`Usuario con ID ${userId} no encontrado`);
+    }
+
+    if (user.typeUser !== 'SUPER_ADMIN') {
+      throw new ConflictException('Este usuario no está permitido eliminar yates. Solo los usuarios SUPER_ADMIN pueden eliminar yates.');
+    }
+
     // Check if yacht exists
     const existingYacht = await this.prisma.yacht.findUnique({
       where: { id },

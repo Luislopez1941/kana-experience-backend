@@ -5,6 +5,12 @@ import { UpdateLocalityDto } from './dto/update-locality.dto';
 import { Locality } from './entities/locality.entity';
 import { ApiResponse } from './types/api-response.type';
 
+// DTO para filtrar localidades
+export interface FilterLocalitiesDto {
+  stateId: number;
+  municipalityId: number;
+}
+
 @Injectable()
 export class LocalitiesService {
   constructor(private readonly prisma: PrismaService) {}
@@ -28,8 +34,31 @@ export class LocalitiesService {
     };
   }
 
-  async findAll(): Promise<ApiResponse<Locality[]>> {
+  async findAll(filterDto?: FilterLocalitiesDto): Promise<ApiResponse<Locality[]>> {
+    let whereClause: any = {};
+
+    // Si se proporciona filtro, aplicarlo
+    if (filterDto) {
+      if (filterDto.stateId && filterDto.municipalityId === 0) {
+        // Filtrar solo por estado
+        whereClause = {
+          municipality: {
+            stateId: filterDto.stateId
+          }
+        };
+      } else if (filterDto.stateId && filterDto.municipalityId > 0) {
+        // Filtrar por estado y municipio
+        whereClause = {
+          municipality: {
+            stateId: filterDto.stateId,
+            id: filterDto.municipalityId
+          }
+        };
+      }
+    }
+
     const localities = await this.prisma.locality.findMany({
+      where: whereClause,
       include: {
         municipality: {
           include: {

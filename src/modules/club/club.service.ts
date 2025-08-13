@@ -6,6 +6,15 @@ import { CreateClubDto } from './dto/create-club.dto';
 import { UpdateClubDto } from './dto/update-club.dto';
 import { ApiResponse } from './types/api-response.type';
 
+// DTO para filtrar clubs
+export interface FilterClubsDto {
+  stateId?: number;
+  municipalityId?: number;
+  localityId?: number;
+  userId?: number;
+  typeId?: number;
+}
+
 @Injectable()
 export class ClubService {
   private readonly storageBucket = 'clubs'; // Bucket de Supabase Storage
@@ -106,11 +115,10 @@ export class ClubService {
       },
     });
 
-    // Process images if provided
-    if (createClubDto.images && createClubDto.images.length > 0) {
-      const images = createClubDto.images;
+    // Save images if provided
+    if (images && images.length > 0) {
       const imagePromises = images.map(async (base64, index) => {
-        const filename = `${createClubDto.name.replace(/\s+/g, '_').toLowerCase()}_${index + 1}.jpg`;
+        const filename = `${clubData.name.replace(/\s+/g, '_').toLowerCase()}_${index + 1}.jpg`;
         const imageUrl = await this.saveBase64Image(base64, filename);
         
         return this.prisma.clubImage.create({
@@ -124,9 +132,9 @@ export class ClubService {
       await Promise.all(imagePromises);
     }
 
-    // Process characteristics if provided
-    if (createClubDto.characteristics && createClubDto.characteristics.length > 0) {
-      const characteristicPromises = createClubDto.characteristics.map(async (characteristic) => {
+    // Save characteristics if provided
+    if (characteristics && characteristics.length > 0) {
+      const characteristicPromises = characteristics.map(async (characteristic) => {
         return this.prisma.clubCharacteristic.create({
           data: {
             name: characteristic,
@@ -139,7 +147,7 @@ export class ClubService {
     }
 
     // Fetch club with images and characteristics
-    const clubWithImages = await this.prisma.club.findUnique({
+    const clubWithData = await this.prisma.club.findUnique({
       where: { id: club.id },
       include: {
         type: true,
@@ -156,14 +164,36 @@ export class ClubService {
     });
 
     return {
-      data: clubWithImages!,
+      data: clubWithData!,
       status: 'success',
       message: 'Club creado correctamente'
     };
   }
 
-  async findAll(): Promise<ApiResponse<Club[]>> {
+  async findAll(filterDto?: FilterClubsDto): Promise<ApiResponse<Club[]>> {
+    let whereClause: any = {};
+
+    // Aplicar filtros si se proporcionan
+    if (filterDto) {
+      if (filterDto.stateId) {
+        whereClause.stateId = filterDto.stateId;
+      }
+      if (filterDto.municipalityId) {
+        whereClause.municipalityId = filterDto.municipalityId;
+      }
+      if (filterDto.localityId) {
+        whereClause.localityId = filterDto.localityId;
+      }
+      if (filterDto.userId) {
+        whereClause.userId = filterDto.userId;
+      }
+      if (filterDto.typeId) {
+        whereClause.typeId = filterDto.typeId;
+      }
+    }
+
     const clubs = await this.prisma.club.findMany({
+      where: whereClause,
       include: {
         type: true,
         state: true,

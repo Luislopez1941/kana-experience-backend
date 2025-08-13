@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus } from '@nestjs/common';
-import { TourService } from './tour.service';
+import { TourService, FilterToursDto } from './tour.service';
 import { CreateTourDto } from './dto/create-tour.dto';
 import { UpdateTourDto } from './dto/update-tour.dto';
 import { ApiResponse } from './types/api-response.type';
@@ -15,9 +15,9 @@ export class TourController {
     return this.tourService.create(createTourDto);
   }
 
-  @Get('get-all')
-  findAll(): Promise<ApiResponse<Tour[]>> {
-    return this.tourService.findAll();
+  @Post('get-tour-by-ids')
+  findAll(@Body() filterDto: FilterToursDto): Promise<ApiResponse<Tour[]>> {
+    return this.tourService.findAll(filterDto);
   }
 
   @Get('by-category/:tourCategoryId')

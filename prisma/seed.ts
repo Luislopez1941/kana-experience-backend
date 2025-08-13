@@ -33,19 +33,7 @@ async function main() {
 
   
 
-  // User Role
-  const userRole = await prisma.role.upsert({
-    where: { name: 'USER' },
-    update: {},
-    create: {
-      name: 'USER',
-      description: 'Regular user with basic permissions',
-      permissions: ['profile.read', 'profile.update'],
-    },
-  });
-
-  console.log('✅ Roles created/updated successfully');
-
+ 
   // Check if super admin already exists
   const existingSuperAdmin = await prisma.user.findFirst({
     where: {
@@ -64,12 +52,13 @@ async function main() {
     // Create super admin
     const superAdmin = await prisma.user.create({
       data: {
-        email: 'superadmin@kana-experience.com',
+        email: 'superadmin@kanaexperience.com',
         password: hashedPassword,
         firstName: 'Super',
         lastName: 'Admin',
         roleId: superAdminRole.id,
         phoneNumber: '+1234567890',
+        typeUser: 'SUPER_ADMIN',
       },
     });
 
@@ -80,95 +69,9 @@ async function main() {
     });
   }
 
-  // Check if admin user already exists
-  const existingAdmin = await prisma.user.findFirst({
-    where: {
-      email: 'admin@kana-experience.com',
-    },
-  });
 
-  if (existingAdmin) {
-    console.log('✅ Admin user already exists, skipping creation');
-  } else {
-    // Create a regular admin user
-    const adminPassword = await bcrypt.hash('Admin123!', 10);
-    const admin = await prisma.user.create({
-      data: {
-        email: 'admin@kana-experience.com',
-        password: adminPassword,
-        firstName: 'Admin',
-        lastName: 'User',
-        roleId: adminRole.id,
-        phoneNumber: '+1234567891',
-      },
-    });
 
-    console.log('✅ Admin user created successfully:', {
-      id: admin.id,
-      email: admin.email,
-      role: adminRole.name,
-    });
-  }
 
-  // Check if regular user already exists
-  const existingUser = await prisma.user.findFirst({
-    where: {
-      email: 'user@kana-experience.com',
-    },
-  });
-
-  if (existingUser) {
-    console.log('✅ Regular user already exists, skipping creation');
-  } else {
-    // Create a regular user
-    const userPassword = await bcrypt.hash('User123!', 10);
-    const user = await prisma.user.create({
-      data: {
-        email: 'user@kana-experience.com',
-        password: userPassword,
-        firstName: 'Regular',
-        lastName: 'User',
-        roleId: userRole.id,
-        phoneNumber: '+1234567892',
-      },
-    });
-
-    console.log('✅ Regular user created successfully:', {
-      id: user.id,
-      email: user.email,
-      role: userRole.name,
-    });
-  }
-
-  // Check if Angel Lara already exists
-  const existingAngelLara = await prisma.user.findFirst({
-    where: {
-      email: 'angellara@kanaexperience.com',
-    },
-  });
-
-  if (existingAngelLara) {
-    console.log('✅ Angel Lara already exists, skipping creation');
-  } else {
-    // Create Angel Lara user
-    const angelPassword = await bcrypt.hash('Lara2025', 10);
-    const angelLara = await prisma.user.create({
-      data: {
-        email: 'angellara@kanaexperience.com',
-        password: angelPassword,
-        firstName: 'Angel',
-        lastName: 'Lara',
-        roleId: adminRole.id,
-        phoneNumber: '+1234567893',
-      },
-    });
-
-    console.log('✅ Angel Lara created successfully:', {
-      id: angelLara.id,
-      email: angelLara.email,
-      role: adminRole.name,
-    });
-  }
 
   // Create states
   console.log('📋 Creating states...');

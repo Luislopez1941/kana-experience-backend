@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, HttpCode, HttpStatus } from '@nestjs/common';
-import { ClubTypeService } from './club-type.service';
+import { ClubTypeService, FilterClubTypesDto } from './club-type.service';
 import { CreateClubTypeDto } from './dto/create-club-type.dto';
 import { UpdateClubTypeDto } from './dto/update-club-type.dto';
 import { ClubType } from './entities/club-type.entity';
@@ -15,9 +15,9 @@ export class ClubTypeController {
     return this.clubTypeService.create(createClubTypeDto);
   }
 
-  @Get('get-all')
-  findAll(): Promise<ApiResponse<ClubType[]>> {
-    return this.clubTypeService.findAll();
+  @Post('get-all')
+  findAll(@Body() filterDto: FilterClubTypesDto): Promise<ApiResponse<ClubType[]>> {
+    return this.clubTypeService.findAll(filterDto);
   }
 
   @Get(':id')

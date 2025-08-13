@@ -5,6 +5,14 @@ import { CreateClubTypeDto } from './dto/create-club-type.dto';
 import { UpdateClubTypeDto } from './dto/update-club-type.dto';
 import { ApiResponse } from './types/api-response.type';
 
+// DTO para filtrar tipos de clubs
+export interface FilterClubTypesDto {
+  stateId?: number;
+  municipalityId?: number;
+  localityId?: number;
+  userId?: number;
+}
+
 @Injectable()
 export class ClubTypeService {
   constructor(private readonly prisma: PrismaService) {}
@@ -30,8 +38,27 @@ export class ClubTypeService {
     };
   }
 
-  async findAll(): Promise<ApiResponse<ClubType[]>> {
+  async findAll(filterDto?: FilterClubTypesDto): Promise<ApiResponse<ClubType[]>> {
+    let whereClause: any = {};
+
+    // Aplicar filtros si se proporcionan
+    if (filterDto) {
+      if (filterDto.stateId) {
+        whereClause.stateId = filterDto.stateId;
+      }
+      if (filterDto.municipalityId) {
+        whereClause.municipalityId = filterDto.municipalityId;
+      }
+      if (filterDto.localityId) {
+        whereClause.localityId = filterDto.localityId;
+      }
+      if (filterDto.userId) {
+        whereClause.userId = filterDto.userId;
+      }
+    }
+
     const clubTypes = await this.prisma.clubType.findMany({
+      where: whereClause,
       orderBy: { name: 'asc' },
     });
 

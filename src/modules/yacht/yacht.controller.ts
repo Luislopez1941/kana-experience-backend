@@ -1,11 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, Query } from '@nestjs/common';
-import { YachtService } from './yacht.service';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, Query, Request, UseGuards } from '@nestjs/common';
+import { YachtService, FilterYachtsDto } from './yacht.service';
 import { CreateYachtDto } from './dto/create-yacht.dto';
 import { UpdateYachtDto } from './dto/update-yacht.dto';
 import { ApiResponse } from './types/api-response.type';
 import { Yacht } from './entities/yacht.entity';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('yachts')
+@UseGuards(JwtAuthGuard)
 export class YachtController {
   constructor(private readonly yachtService: YachtService) {}
 
@@ -15,9 +17,9 @@ export class YachtController {
     return this.yachtService.create(createYachtDto);
   }
 
-  @Get('get-all')
-  findAll(): Promise<ApiResponse<Yacht[]>> {
-    return this.yachtService.findAll();
+  @Post('get-yacht-by-ids')
+  findAll(@Body() filterDto: FilterYachtsDto): Promise<ApiResponse<Yacht[]>> {
+    return this.yachtService.findAll(filterDto);
   }
 
   @Post('by-category')
@@ -28,11 +30,6 @@ export class YachtController {
     return this.yachtService.getYachtsByYachtCategory(yachtCategoryId, page);
   }
 
-  @Get('get-yacht-by-id/:id')
-  findOne(@Param('id') id: string) {
-    return this.yachtService.findOne(+id);
-  }
-
   @Patch('update/:id')
   update(@Param('id') id: string, @Body() updateYachtDto: UpdateYachtDto): Promise<ApiResponse<Yacht>> {
     return this.yachtService.update(+id, updateYachtDto);
@@ -40,7 +37,8 @@ export class YachtController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id') id: string) {
-    return this.yachtService.remove(+id);
+  remove(@Param('id') id: string, @Request() req) {
+    const userId = req.user.id;
+    return this.yachtService.remove(+id, userId);
   }
 }

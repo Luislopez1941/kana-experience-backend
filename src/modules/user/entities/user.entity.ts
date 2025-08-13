@@ -3,16 +3,36 @@ export class User {
   email: string;
   password: string;
   firstName: string;
-  middleName?: string;
+  middleName?: string | null;
   lastName: string;
-  secondLastName?: string;
-  phoneNumber?: string;
-  profileImage?: string;
+  secondLastName?: string | null;
+  phoneNumber?: string | null;
+  profileImage?: string | null;
+  typeUser: string;
   roleId: number;
   role: Role;
-  parentId?: number;
-  parent?: User;
+  parentId?: number | null;
+  parent?: User | null;
   subUsers?: User[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export class UserResponseDto {
+  id: number;
+  email: string;
+  firstName: string;
+  middleName?: string | null;
+  lastName: string;
+  secondLastName?: string | null;
+  phoneNumber?: string | null;
+  profileImage?: string | null;
+  typeUser: string;
+  roleId: number;
+  role: Role;
+  parentId?: number | null;
+  parent?: UserResponseDto | null;
+  subUsers?: UserResponseDto[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -20,7 +40,7 @@ export class User {
 export class Role {
   id: number;
   name: string;
-  description?: string;
+  description?: string | null;
   permissions?: any;
   users?: User[];
   createdAt: Date;

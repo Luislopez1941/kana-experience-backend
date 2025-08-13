@@ -1,10 +1,10 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UserService } from '../user/user.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
-import { User } from '../user/entities/user.entity';
+import { User, UserResponseDto } from '../user/entities/user.entity';
 import * as bcrypt from 'bcryptjs';
 
 @Injectable()
@@ -16,7 +16,7 @@ export class AuthService {
   ) {}
 
   async validateUser(email: string, password: string): Promise<any> {
-    const user = await this.userService.findByEmail(email);
+    const user = await this.userService.findByEmailWithPassword(email);
     
     // Si el usuario no existe
     if (!user) {
@@ -63,8 +63,7 @@ export class AuthService {
 
     // Configure token expiration based on remember option
     const expiresIn = loginDto.remember ? '30d' : '7d';
-
-    return {
+    const data = {
       access_token: this.jwtService.sign(payload, { expiresIn }),
       user: {
         id: validationResult.id,
@@ -77,6 +76,7 @@ export class AuthService {
       message: 'Inicio de sesión exitoso',
       expiresIn,
     };
+    return {data: data};
   }
 
   async register(registerDto: RegisterDto) {
@@ -108,7 +108,7 @@ export class AuthService {
     };
   }
 
-  async getProfile(userId: number): Promise<User> {
+  async getProfile(userId: number): Promise<UserResponseDto> {
     return this.userService.findOne(userId);
   }
 }

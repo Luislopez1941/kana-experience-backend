@@ -14,12 +14,17 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('jwt.secret') || 'your-super-secret-jwt-key-here',
-        signOptions: {
-          expiresIn: configService.get<string>('jwt.expiresIn') || '7d',
-        },
-      }),
+      useFactory: async (configService: ConfigService) => {
+        const jwtSecret = configService.get<string>('JWT_SECRET') || 'your-super-secret-jwt-key-here';
+        const jwtExpiresIn = configService.get<string>('JWT_EXPIRES_IN') || '7d';
+        
+        return {
+          secret: jwtSecret,
+          signOptions: {
+            expiresIn: jwtExpiresIn,
+          },
+        };
+      },
       inject: [ConfigService],
     }),
   ],

@@ -74,4 +74,8 @@ export class UpdateYachtDto {
   @IsNumber()
   @Type(() => Number)
   yachtCategoryId?: number;
+
+  @IsNumber()
+  @IsNotEmpty()
+  userId: number;
 }

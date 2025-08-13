@@ -66,4 +66,20 @@ export class CreateYachtDto {
   @IsNumber()
   @Type(() => Number)
   yachtCategoryId: number;
+
+  @IsNumber()
+  @IsNotEmpty()
+  userId: number;
+
+  @IsNumber()
+  @IsNotEmpty()
+  stateId: number;
+
+  @IsNumber()
+  @IsNotEmpty()
+  municipalityId: number;
+
+  @IsNumber()
+  @IsNotEmpty()
+  localityId: number;
 }

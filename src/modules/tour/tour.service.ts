@@ -6,6 +6,14 @@ import { UpdateTourDto } from './dto/update-tour.dto';
 import { Tour } from './entities/tour.entity';
 import { ApiResponse } from './types/api-response.type';
 
+// DTO para filtrar tours
+export interface FilterToursDto {
+  stateId?: number;
+  municipalityId?: number;
+  localityId?: number;
+  userId?: number;
+}
+
 @Injectable()
 export class TourService {
   private readonly storageBucket = 'tours'; // Bucket de Supabase Storage
@@ -99,7 +107,7 @@ export class TourService {
       await Promise.all(characteristicPromises);
     }
 
-    // Get the tour with images and characteristics
+    // Fetch tour with images and characteristics
     const tourWithData = await this.prisma.tour.findUnique({
       where: { id: tour.id },
       include: {
@@ -113,19 +121,34 @@ export class TourService {
       },
     });
 
-    if (!tourWithData) {
-      throw new NotFoundException(`Tour with ID ${tour.id} not found`);
-    }
-
     return {
-      data: tourWithData,
+      data: tourWithData!,
       status: 'success',
       message: 'Tour creado correctamente'
     };
   }
 
-  async findAll(): Promise<ApiResponse<Tour[]>> {
+  async findAll(filterDto?: FilterToursDto): Promise<ApiResponse<Tour[]>> {
+    let whereClause: any = {};
+
+    // Aplicar filtros si se proporcionan
+    if (filterDto) {
+      if (filterDto.stateId) {
+        whereClause.stateId = filterDto.stateId;
+      }
+      if (filterDto.municipalityId) {
+        whereClause.municipalityId = filterDto.municipalityId;
+      }
+      if (filterDto.localityId) {
+        whereClause.localityId = filterDto.localityId;
+      }
+      if (filterDto.userId) {
+        whereClause.userId = filterDto.userId;
+      }
+    }
+
     const tours = await this.prisma.tour.findMany({
+      where: whereClause,
       include: {
         images: {
           orderBy: { createdAt: 'asc' }

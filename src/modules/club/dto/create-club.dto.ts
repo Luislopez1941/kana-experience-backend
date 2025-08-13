@@ -47,4 +47,8 @@ export class CreateClubDto {
   @IsNumber()
   @IsNotEmpty()
   localityId: number;
+
+  @IsNumber()
+  @IsNotEmpty()
+  userId: number;
 } 
