@@ -58,23 +58,42 @@ export class YachtTypeService {
   }
 
   async findAll(filterDto?: FilterYachtCategoriesDto): Promise<ApiResponse<YachtCategory[]>> {
+    // Validar que se proporcione userId para verificar permisos
+    if (!filterDto?.userId) {
+      throw new ConflictException('Se requiere el ID del usuario para acceder a las categorías de yates');
+    }
+
+    // Validar permisos del usuario - solo SUPER_ADMIN puede ver tipos de yates
+    const user = await this.prisma.user.findUnique({
+      where: { id: filterDto.userId },
+      select: { typeUser: true }
+    });
+
+    if (!user) {
+      throw new NotFoundException(`Usuario con ID ${filterDto.userId} no encontrado`);
+    }
+
+    if (user.typeUser !== 'SUPER_ADMIN') {
+      throw new ConflictException('Este usuario no está permitido ver tipos de yates. Solo los usuarios SUPER_ADMIN pueden acceder a las categorías de yates.');
+    }
+
     let whereClause: any = {};
 
-    // Aplicar filtros si se proporcionan
-    if (filterDto) {
-      if (filterDto.stateId) {
-        whereClause.stateId = filterDto.stateId;
-      }
-      if (filterDto.municipalityId) {
-        whereClause.municipalityId = filterDto.municipalityId;
-      }
-      if (filterDto.localityId) {
-        whereClause.localityId = filterDto.localityId;
-      }
-      if (filterDto.userId) {
-        whereClause.userId = filterDto.userId;
-      }
+    // Aplicar filtros individuales solo si se proporcionan
+    if (filterDto.stateId && filterDto.stateId > 0) {
+      whereClause.stateId = filterDto.stateId;
     }
+    
+    if (filterDto.municipalityId && filterDto.municipalityId > 0) {
+      whereClause.municipalityId = filterDto.municipalityId;
+    }
+    
+    if (filterDto.localityId && filterDto.localityId > 0) {
+      whereClause.localityId = filterDto.localityId;
+    }
+    
+    // userId siempre se incluye para mantener la seguridad
+    whereClause.userId = filterDto.userId;
 
     const yachtCategories = await this.prisma.yachtCategory.findMany({
       where: whereClause,

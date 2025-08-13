@@ -420,13 +420,28 @@ export class YachtService {
     });
   }
 
-  async getYachtsByYachtCategory(yachtCategoryId: number, page: number): Promise<ApiResponse<Yacht[]>> {
+  async getYachtsByYachtCategory(userId: number, yachtCategoryId: number, page: number): Promise<ApiResponse<Yacht[]>> {
+    // Validar permisos del usuario - solo SUPER_ADMIN puede ver yates
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { typeUser: true }
+    });
+
+    if (!user) {
+      throw new NotFoundException(`Usuario con ID ${userId} no encontrado`);
+    }
+
+    if (user.typeUser !== 'SUPER_ADMIN') {
+      throw new ConflictException('Este usuario no está permitido ver yates. Solo los usuarios SUPER_ADMIN pueden acceder a las embarcaciones.');
+    }
+
     const limit = 8; // Límite estático de 8 elementos por página
     const skip = (page - 1) * limit;
     
-    // If yachtCategoryId is 0, return all yachts with pagination
+    // If yachtCategoryId is 0, return all yachts of the specific user with pagination
     if (yachtCategoryId === 0) {
       const yachts = await this.prisma.yacht.findMany({
+        where: { userId }, // Filtrar por el usuario específico
         include: {
           yachtCategory: true,
           images: {
@@ -441,14 +456,16 @@ export class YachtService {
         take: limit,
       });
       
-      const total = await this.prisma.yacht.count();
+      const total = await this.prisma.yacht.count({
+        where: { userId }, // Contar solo los yates del usuario específico
+      });
 
       const totalPages = Math.ceil(total / limit);
 
       return {
         data: yachts, 
         status: 'success', 
-        message: 'Todas las embarcaciones obtenidas correctamente',
+        message: `Todas las embarcaciones del usuario ${userId} obtenidas correctamente`,
         pagination: {
           page,
           limit,
@@ -470,7 +487,10 @@ export class YachtService {
     }
 
     const yachts = await this.prisma.yacht.findMany({
-      where: { yachtCategoryId },
+      where: { 
+        yachtCategoryId,
+        userId // También filtrar por usuario específico
+      },
       include: {
         yachtCategory: true,
         images: {
@@ -486,7 +506,10 @@ export class YachtService {
     });
     
     const total = await this.prisma.yacht.count({
-      where: { yachtCategoryId },
+      where: { 
+        yachtCategoryId,
+        userId // Contar solo los yates de la categoría y usuario específicos
+      },
     });
 
     const totalPages = Math.ceil(total / limit);
@@ -494,7 +517,7 @@ export class YachtService {
     return {
       data: yachts, 
       status: 'success', 
-      message: `Embarcaciones de la categoría ${yachtCategory.name} obtenidas correctamente`,
+      message: `Embarcaciones de la categoría ${yachtCategory.name} del usuario ${userId} obtenidas correctamente`,
       pagination: {
         page,
         limit,
