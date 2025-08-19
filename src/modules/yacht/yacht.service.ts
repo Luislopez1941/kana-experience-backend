@@ -99,7 +99,7 @@ export class YachtService {
       const characteristicPromises = createYachtDto.characteristics.map(async (characteristic) => {
         return this.prisma.yachtCharacteristic.create({
           data: {
-            name: characteristic,
+            name: characteristic.name,
             yachtId: yacht.id,
           },
         });
@@ -341,7 +341,7 @@ export class YachtService {
       const characteristicPromises = updateYachtDto.characteristics.map(async (characteristic) => {
         return this.prisma.yachtCharacteristic.create({
           data: {
-            name: characteristic,
+            name: characteristic.name,
             yachtId: id,
           },
         });

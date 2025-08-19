@@ -17,6 +17,12 @@ class PricingItemDto {
   price: number;
 }
 
+class CharacteristicDto {
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+}
+
 export class UpdateYachtDto {
   @IsOptional()
   @IsString()
@@ -48,8 +54,10 @@ export class UpdateYachtDto {
   delete_images?: number[];
 
   @IsOptional()
-  @IsString({ each: true })
-  characteristics?: string[];
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CharacteristicDto)
+  characteristics?: CharacteristicDto[];
 
   @IsOptional()
   @IsString()
