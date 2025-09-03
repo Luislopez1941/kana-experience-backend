@@ -40,7 +40,6 @@ export class UpdateClubDto {
 
   @IsOptional()
   @IsNumber()
-  @IsNotEmpty()
   typeId?: number;
 
   @IsOptional()

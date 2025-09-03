@@ -55,13 +55,20 @@ export class ClubService {
   }
 
   async create(createClubDto: CreateClubDto): Promise<ApiResponse<Club>> {
-    // Check if club type exists
-    const clubType = await this.prisma.clubType.findUnique({
-      where: { id: createClubDto.typeId },
-    });
+    // Convert typeId 0 to null
+    if (createClubDto.typeId === 0) {
+      (createClubDto as any).typeId = null;
+    }
 
-    if (!clubType) {
-      throw new NotFoundException(`Club type with ID ${createClubDto.typeId} not found`);
+    // Check if club type exists (only if typeId is provided)
+    if (createClubDto.typeId) {
+      const clubType = await this.prisma.clubType.findUnique({
+        where: { id: createClubDto.typeId },
+      });
+
+      if (!clubType) {
+        throw new NotFoundException(`Club type with ID ${createClubDto.typeId} not found`);
+      }
     }
 
     // Check if state exists
@@ -170,7 +177,31 @@ export class ClubService {
     };
   }
 
-  async findAll(filterDto?: FilterClubsDto): Promise<ApiResponse<Club[]>> {
+  async findAll(): Promise<ApiResponse<Club[]>> {
+    const clubs = await this.prisma.club.findMany({
+      include: {
+        type: true,
+        state: true,
+        municipality: true,
+        locality: true,
+        images: {
+          orderBy: { createdAt: 'asc' }
+        },
+        characteristics: {
+          orderBy: { createdAt: 'asc' }
+        },
+      },
+      orderBy: { name: 'asc' },
+    });
+
+    return {
+      data: clubs,
+      status: 'success',
+      message: 'Todos los clubs obtenidos correctamente'
+    };
+  }
+
+  async findAllClubs(filterDto?: FilterClubsDto): Promise<ApiResponse<Club[]>> {
     let whereClause: any = {};
 
     // Aplicar filtros si se proporcionan
@@ -243,6 +274,14 @@ export class ClubService {
   async update(id: number, updateClubDto: UpdateClubDto): Promise<ApiResponse<Club>> {
     // Prepare update data
     const { images, characteristics, delete_images, phone, website, ...updateData } = updateClubDto;
+    
+    // Convert typeId 0 to null
+    if (updateData.typeId === 0) {
+      (updateData as any).typeId = null;
+    }
+    
+    console.log('Original typeId:', updateClubDto.typeId);
+    console.log('Processed typeId:', updateData.typeId);
 
     // Check if club exists
     const existingClub = await this.prisma.club.findUnique({
@@ -258,8 +297,8 @@ export class ClubService {
       throw new NotFoundException(`Club with ID ${id} not found`);
     }
 
-    // Validate club type if being updated
-    if (updateClubDto.typeId) {
+    // Validate club type if being updated (treat 0 as null)
+    if (updateClubDto.typeId && updateClubDto.typeId !== 0) {
       const clubType = await this.prisma.clubType.findUnique({
         where: { id: updateClubDto.typeId },
       });
@@ -495,6 +534,31 @@ export class ClubService {
       data: clubs,
       status: 'success',
       message: `Clubs de tipo ${clubType.name} obtenidos correctamente`
+    };
+  }
+
+  async getWithoutType(): Promise<ApiResponse<Club[]>> {
+    const clubs = await this.prisma.club.findMany({
+      where: { typeId: null },
+      include: {
+        type: true,
+        state: true,
+        municipality: true,
+        locality: true,
+        images: {
+          orderBy: { createdAt: 'asc' }
+        },
+        characteristics: {
+          orderBy: { createdAt: 'asc' }
+        },
+      },
+      orderBy: { name: 'asc' },
+    });
+
+    return {
+      data: clubs,
+      status: 'success',
+      message: 'Clubs sin tipo obtenidos correctamente'
     };
   }
 } 

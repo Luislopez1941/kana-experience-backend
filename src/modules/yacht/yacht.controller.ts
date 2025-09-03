@@ -17,11 +17,22 @@ export class YachtController {
     return this.yachtService.create(createYachtDto);
   }
 
+  @Get('get-all')
+  findAll(): Promise<ApiResponse<Yacht[]>> {
+    return this.yachtService.findAll();
+  }
+
   @Post('get-yacht-by-ids')
   @UseGuards(JwtAuthGuard)
-  findAll(@Body() filterDto: FilterYachtsDto): Promise<ApiResponse<Yacht[]>> {
-    return this.yachtService.findAll(filterDto);
+  findAllWithFilters(@Body() filterDto: FilterYachtsDto): Promise<ApiResponse<Yacht[]>> {
+    return this.yachtService.findAllWithFilters(filterDto);
   }
+
+  @Get('get-yacht-by-id/:id')
+  findOne(@Param('id') id: string): Promise<ApiResponse<Yacht>> {
+    return this.yachtService.findOne(+id);
+  }
+
 
   @Post('by-categories')
   getYachtsByYachtCategory(

@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Club" ALTER COLUMN "typeId" DROP NOT NULL;

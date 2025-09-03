@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { SupabaseService } from '../../common/services/supabase.service';
 import { CreateTourTypeDto } from './dto/create-tour-type.dto';
 import { UpdateTourTypeDto } from './dto/update-tour-type.dto';
 import { TourType } from './entities/tour-type.entity';
@@ -15,7 +16,42 @@ export interface FilterTourCategoriesDto {
 
 @Injectable()
 export class TourTypeService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly storageBucket = 'tour-categories'; // Bucket de Supabase Storage
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly supabase: SupabaseService,
+  ) {}
+
+  private async saveBase64Image(base64Data: string, filename: string): Promise<string> {
+    try {
+      // Generar nombre único para el archivo
+      const uniqueFilename = this.supabase.generateUniqueFileName(filename, 'tour_category_');
+      
+      // Upload a Supabase Storage
+      const imageUrl = await this.supabase.uploadBase64Image(
+        this.storageBucket,
+        uniqueFilename,
+        base64Data
+      );
+      
+      return imageUrl;
+    } catch (error) {
+      throw new Error(`Error processing image: ${error.message}`);
+    }
+  }
+
+  private async deleteImage(imagePath: string): Promise<void> {
+    try {
+      // Extraer solo el nombre del archivo de la URL completa
+      const filename = imagePath.split('/').pop();
+      if (filename) {
+        await this.supabase.deleteImage(this.storageBucket, filename);
+      }
+    } catch (error) {
+      console.error(`Error deleting image ${imagePath}:`, error);
+    }
+  }
 
   async create(createTourTypeDto: CreateTourTypeDto): Promise<ApiResponse<TourType>> {
     // Check if tour category with name already exists
@@ -27,14 +63,39 @@ export class TourTypeService {
       throw new ConflictException('Tour category with this name already exists');
     }
 
+    // Prepare data without image
+    const { image, ...tourCategoryData } = createTourTypeDto;
+
+    // Process image if provided
+    let imageUrl: string | null = null;
+    if (image && image.startsWith('data:image')) {
+      const filename = `${createTourTypeDto.name.replace(/\s+/g, '_').toLowerCase()}.jpg`;
+      imageUrl = await this.saveBase64Image(image, filename);
+    }
+
     const tourCategory = await this.prisma.tourCategory.create({
-      data: createTourTypeDto,
+      data: {
+        ...tourCategoryData,
+        image: imageUrl,
+      },
     });
 
     return {data: tourCategory, status: 'success',  message: 'Categoría de tour creada correctamente'};
   }
 
-  async findAll(filterDto?: FilterTourCategoriesDto): Promise<ApiResponse<TourType[]>> {
+  async findAll(): Promise<ApiResponse<TourType[]>> {
+    const tourCategories = await this.prisma.tourCategory.findMany({
+      orderBy: { name: 'asc' },
+    });
+
+    return {
+      data: tourCategories, 
+      status: 'success', 
+      message: 'Todas las categorías de tour obtenidas correctamente'
+    };
+  }
+
+  async findAllWithFilters(filterDto?: FilterTourCategoriesDto): Promise<ApiResponse<TourType[]>> {
     let whereClause: any = {};
 
     // Aplicar filtros si se proporcionan
@@ -58,7 +119,11 @@ export class TourTypeService {
       orderBy: { name: 'asc' },
     });
 
-    return {data: tourCategories, status: 'success', message: 'Categorías de tour obtenidas correctamente'};
+    return {
+      data: tourCategories, 
+      status: 'success', 
+      message: 'Categorías de tour filtradas obtenidas correctamente'
+    };
   }
 
   async findOne(id: number): Promise<TourType> {
@@ -94,9 +159,31 @@ export class TourTypeService {
       }
     }
 
+    // Prepare update data
+    const { image, ...updateData } = updateTourTypeDto;
+
+    // Process image if provided
+    let imageUrl: string | null = existingTourCategory.image;
+    if (image) {
+      if (image.startsWith('data:image')) {
+        // New base64 image - delete old one and upload new one
+        if (existingTourCategory.image) {
+          await this.deleteImage(existingTourCategory.image);
+        }
+        const filename = `${updateTourTypeDto.name || existingTourCategory.name.replace(/\s+/g, '_').toLowerCase()}.jpg`;
+        imageUrl = await this.saveBase64Image(image, filename);
+      } else {
+        // URL provided - use as is
+        imageUrl = image;
+      }
+    }
+
     const updatedTourCategory = await this.prisma.tourCategory.update({
       where: { id },
-      data: updateTourTypeDto,
+      data: {
+        ...updateData,
+        image: imageUrl,
+      },
     });
 
     return {data: updatedTourCategory, status: 'success', message: 'Categoría de tour actualizada correctamente'};
@@ -119,6 +206,11 @@ export class TourTypeService {
 
     if (toursWithCategory.length > 0) {
       throw new ConflictException('Cannot delete tour category that is being used by tours');
+    }
+
+    // Delete image if exists
+    if (existingTourCategory.image) {
+      await this.deleteImage(existingTourCategory.image);
     }
 
     await this.prisma.tourCategory.delete({

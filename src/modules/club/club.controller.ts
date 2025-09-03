@@ -16,13 +16,23 @@ export class ClubController {
   }
 
   @Post('get-by-ids')
-  findAll(@Body() filterDto: FilterClubsDto): Promise<ApiResponse<Club[]>> {
-    return this.clubService.findAll(filterDto);
+  findAllWithFilters(@Body() filterDto: FilterClubsDto): Promise<ApiResponse<Club[]>> {
+    return this.clubService.findAllClubs(filterDto);
+  }
+
+  @Get('get-all')
+  findAll(): Promise<ApiResponse<Club[]>> {
+    return this.clubService.findAll();
   }
 
   @Get('by-category/:typeId')
   getByType(@Param('typeId', ParseIntPipe) typeId: number): Promise<ApiResponse<Club[]>> {
     return this.clubService.getByType(typeId);
+  }
+
+  @Get('without-type')
+  getWithoutType(): Promise<ApiResponse<Club[]>> {
+    return this.clubService.getWithoutType();
   }
 
   @Get('get-by-id/:id')

@@ -121,7 +121,28 @@ export class YachtService {
     return {data: yachtWithImages!, status: 'success', message: 'Embarcación creada correctamente'};
   }
 
-  async findAll(filterDto?: FilterYachtsDto): Promise<ApiResponse<Yacht[]>> {
+  async findAll(): Promise<ApiResponse<Yacht[]>> {
+    const yachts = await this.prisma.yacht.findMany({
+      include: {
+        yachtCategory: true,
+        images: {
+          orderBy: { createdAt: 'asc' }
+        },
+        characteristics: {
+          orderBy: { createdAt: 'asc' }
+        },
+      },
+      orderBy: { name: 'asc' },
+    });
+
+    return {
+      data: yachts,
+      status: 'success',
+      message: 'Todos los yachts obtenidos correctamente'
+    };
+  }
+
+  async findAllWithFilters(filterDto?: FilterYachtsDto): Promise<ApiResponse<Yacht[]>> {
     let whereClause: any = {};
 
     // Aplicar filtros si se proporcionan
@@ -164,7 +185,7 @@ export class YachtService {
     return {data: yachts, status: 'success', message: 'Embarcaciones obtenidas correctamente'};
   }
 
-  async findOne(id: number): Promise<Yacht> {
+  async findOne(id: number): Promise<ApiResponse<Yacht>> {
     const yacht = await this.prisma.yacht.findUnique({
       where: { id },
       include: {
@@ -182,7 +203,11 @@ export class YachtService {
       throw new NotFoundException(`Yacht with ID ${id} not found`);
     }
 
-    return yacht;
+    return {
+      data: yacht,
+      status: 'success',
+      message: 'Yacht obtenido correctamente'
+    };
   }
 
   async update(id: number, updateYachtDto: UpdateYachtDto): Promise<ApiResponse<Yacht>> {

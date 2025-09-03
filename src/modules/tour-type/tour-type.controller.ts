@@ -15,9 +15,14 @@ export class TourTypeController {
     return this.tourTypeService.create(createTourTypeDto);
   }
 
-  @Post('get-all')
-  findAll(@Body() filterDto: FilterTourCategoriesDto): Promise<ApiResponse<TourType[]>> {
-    return this.tourTypeService.findAll(filterDto);
+  @Get('get-all')
+  findAll(): Promise<ApiResponse<TourType[]>> {
+    return this.tourTypeService.findAll();
+  }
+
+  @Post('get-by-filters')
+  findAllWithFilters(@Body() filterDto: FilterTourCategoriesDto): Promise<ApiResponse<TourType[]>> {
+    return this.tourTypeService.findAllWithFilters(filterDto);
   }
 
   @Get(':id')

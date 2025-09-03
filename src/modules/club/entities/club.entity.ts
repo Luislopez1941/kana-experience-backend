@@ -21,14 +21,16 @@ export class Club {
   address?: string | null;
   phone?: string | null;
   website?: string | null;
-  typeId: number;
-  type?: ClubType;
+  typeId?: number | null;
+  type?: ClubType | null;
   stateId: number;
   state?: State;
   municipalityId: number;
   municipality?: Municipality;
   localityId: number;
   locality?: Locality;
+  userId: number;
+  user?: User;
   images?: ClubImage[];
   characteristics?: ClubCharacteristic[];
   createdAt: Date;
@@ -63,6 +65,14 @@ export class Locality {
   name: string;
   municipalityId: number;
   municipality?: Municipality;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export class User {
+  id: number;
+  email: string;
+  name?: string | null;
   createdAt: Date;
   updatedAt: Date;
 } 

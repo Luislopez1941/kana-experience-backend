@@ -29,6 +29,10 @@ async function createAppBuckets() {
       {
         name: 'tours',
         description: 'Imágenes de tours y excursiones'
+      },
+      {
+        name: 'tour-categories',
+        description: 'Imágenes de categorías de tours'
       }
     ];
     

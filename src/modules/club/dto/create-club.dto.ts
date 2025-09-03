@@ -32,9 +32,9 @@ export class CreateClubDto {
   @IsString({ each: true })
   characteristics?: string[];
 
+  @IsOptional()
   @IsNumber()
-  @IsNotEmpty()
-  typeId: number;
+  typeId?: number;
 
   @IsNumber()
   @IsNotEmpty()
