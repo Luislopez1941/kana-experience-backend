@@ -63,20 +63,12 @@ export class TourTypeService {
       throw new ConflictException('Tour category with this name already exists');
     }
 
-    // Prepare data without image
-    const { image, ...tourCategoryData } = createTourTypeDto;
-
-    // Process image if provided
-    let imageUrl: string | null = null;
-    if (image && image.startsWith('data:image')) {
-      const filename = `${createTourTypeDto.name.replace(/\s+/g, '_').toLowerCase()}.jpg`;
-      imageUrl = await this.saveBase64Image(image, filename);
-    }
+    // Prepare data
+    const tourCategoryData = createTourTypeDto;
 
     const tourCategory = await this.prisma.tourCategory.create({
       data: {
         ...tourCategoryData,
-        image: imageUrl,
       },
     });
 
@@ -160,29 +152,12 @@ export class TourTypeService {
     }
 
     // Prepare update data
-    const { image, ...updateData } = updateTourTypeDto;
-
-    // Process image if provided
-    let imageUrl: string | null = existingTourCategory.image;
-    if (image) {
-      if (image.startsWith('data:image')) {
-        // New base64 image - delete old one and upload new one
-        if (existingTourCategory.image) {
-          await this.deleteImage(existingTourCategory.image);
-        }
-        const filename = `${updateTourTypeDto.name || existingTourCategory.name.replace(/\s+/g, '_').toLowerCase()}.jpg`;
-        imageUrl = await this.saveBase64Image(image, filename);
-      } else {
-        // URL provided - use as is
-        imageUrl = image;
-      }
-    }
+    const updateData = updateTourTypeDto;
 
     const updatedTourCategory = await this.prisma.tourCategory.update({
       where: { id },
       data: {
         ...updateData,
-        image: imageUrl,
       },
     });
 
@@ -208,10 +183,7 @@ export class TourTypeService {
       throw new ConflictException('Cannot delete tour category that is being used by tours');
     }
 
-    // Delete image if exists
-    if (existingTourCategory.image) {
-      await this.deleteImage(existingTourCategory.image);
-    }
+    // No image handling needed
 
     await this.prisma.tourCategory.delete({
       where: { id },

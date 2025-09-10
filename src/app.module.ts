@@ -12,6 +12,8 @@ import { StateModule } from './modules/state/state.module';
 import { MunicipalityModule } from './modules/municipality/municipality.module';
 import { ClubModule } from './modules/club/club.module';
 import { ClubTypeModule } from './modules/club-type/club-type.module';
+import { ReservationsModule } from './modules/reservations/reservations.module';
+import { FolioModule } from './modules/folio/folio.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { LocalitiesModule } from './modules/localities/localities.module';
 import { CommonModule } from './common/common.module';
@@ -36,6 +38,8 @@ import configuration from './config/configuration';
     MunicipalityModule,
     ClubModule,
     ClubTypeModule,
+    ReservationsModule,
+    FolioModule,
     LocalitiesModule,
   ],
   controllers: [AppController],

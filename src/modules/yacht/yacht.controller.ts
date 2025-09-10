@@ -17,7 +17,7 @@ export class YachtController {
     return this.yachtService.create(createYachtDto);
   }
 
-  @Get('get-all')
+  @Post('get-all')
   findAll(): Promise<ApiResponse<Yacht[]>> {
     return this.yachtService.findAll();
   }
@@ -27,6 +27,8 @@ export class YachtController {
   findAllWithFilters(@Body() filterDto: FilterYachtsDto): Promise<ApiResponse<Yacht[]>> {
     return this.yachtService.findAllWithFilters(filterDto);
   }
+
+  
 
   @Get('get-yacht-by-id/:id')
   findOne(@Param('id') id: string): Promise<ApiResponse<Yacht>> {

@@ -49,6 +49,7 @@ model User {
   tourCategories TourCategory[]
   clubs          Club[]
   clubTypes      ClubType[]
+  reservations   Reservation[]
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -98,6 +99,7 @@ model Yacht {
   
   images          YachtImage[]
   characteristics YachtCharacteristic[]
+  reservations    Reservation[]
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 }
@@ -123,7 +125,6 @@ model YachtCharacteristic {
 model TourCategory {
   id        Int      @id @default(autoincrement())
   name      String   @unique
-  image     String?  // URL de la imagen de la categoría
   tours     Tour[]
   userId    Int      // ID del usuario que creó esta categoría
   user      User     @relation(fields: [userId], references: [id])
@@ -169,6 +170,7 @@ model Tour {
   
   images        TourImage[]
   characteristics TourCharacteristic[]
+  reservations  Reservation[]
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 }
@@ -247,7 +249,7 @@ model Club {
   description    String?
   address        String?
   typeId         Int?
-  type           ClubType?  @relation(fields: [typeId], references: [id], onDelete: Cascade)
+  type           ClubType?   @relation(fields: [typeId], references: [id], onDelete: Cascade)
   
   stateId        Int
   state          State      @relation(fields: [stateId], references: [id], onDelete: Cascade)
@@ -263,6 +265,7 @@ model Club {
 
   images         ClubImage[]
   characteristics ClubCharacteristic[]
+  reservations   Reservation[]
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
 }
@@ -302,4 +305,52 @@ model ClubType {
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Folio {
+  id        Int      @id @default(autoincrement())
+  number    Int      // Número secuencial del folio
+  year      Int      // Año del folio
+  folio     Int      @unique // Folio completo (ej: 125 = folio 1 del año 2025)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relación con reservaciones
+  reservations Reservation[]
+}
+
+model Reservation {
+  id              Int      @id @default(autoincrement())
+  firstName       String
+  lastName        String
+  email           String
+  phone           String
+  reservationDate DateTime
+  quantity        Int
+  description     String?
+  productId       Int     // ID del producto (yate, tour o club)
+  type            String  // 'yacht', 'tour', 'club'
+  qr              String? // Código QR para la reservación
+  status          String  @default("pending")
+  
+  // Relación con el folio
+  folioId         Int
+  folio           Folio    @relation(fields: [folioId], references: [id])
+  
+  // Relación con el usuario que hizo la reservación
+  userId          Int
+  user            User     @relation(fields: [userId], references: [id])
+  
+  // Relaciones opcionales con los productos
+  yachtId         Int?
+  yacht           Yacht?   @relation(fields: [yachtId], references: [id])
+  
+  tourId          Int?
+  tour            Tour?    @relation(fields: [tourId], references: [id])
+  
+  clubId          Int?
+  club            Club?    @relation(fields: [clubId], references: [id])
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }

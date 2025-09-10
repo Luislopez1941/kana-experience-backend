@@ -21,7 +21,7 @@
     "prisma:reset": "prisma migrate reset --force",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
-    "prisma:migrate": "prisma migrate dev --name kana-experience_01",
+    "prisma:migrate": "prisma migrate dev --name kana-experience_02",
     "prisma:seed": "ts-node prisma/seed.ts",
     "pm2:start": "pm2 start ecosystem.config.js",
     "pm2:stop": "pm2 stop kana-experience",
